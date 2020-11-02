@@ -37,7 +37,12 @@ object FailingEventsByTagSourceProvider {
                                                   system: ActorSystem[_])
     extends SourceProvider[Offset, EventEnvelope[Event]] {
     implicit val executionContext: ExecutionContext = system.executionContext
-    private val failEvery = system.settings.config.getInt("test.projection-failure-every")
+    private val failEvery = {
+      system.settings.config.getString("test.projection-failure-every").toLowerCase() match {
+        case "off" => Int.MaxValue
+        case _ => system.settings.config.getInt("test.projection-failure-every")
+      }
+    }
 
     override def source(offset: () => Future[Option[Offset]]): Future[Source[EventEnvelope[Event], NotUsed]] =
       offset().map { offsetOpt =>
@@ -45,7 +50,7 @@ object FailingEventsByTagSourceProvider {
         eventsByTagQuery
           .eventsByTag(tag, offset)
           .map { env =>
-            if (Random.nextInt(failEvery) == 1) {
+            if (failEvery != Int.MaxValue && Random.nextInt(failEvery) == 1) {
               throw new RuntimeException(s"Persistence id ${env.persistenceId} sequence nr ${env.sequenceNr} offset ${env.offset} Restart the stream!") with NoStackTrace
             }
             env

@@ -35,12 +35,12 @@ object ConfigurablePersistentActor {
         State(0),
         (state, command) => command match {
           case PersistAndAck(totalEvents, toPersist, ack, testName) =>
-            ctx.log.info("persisting {} events", totalEvents)
+            ctx.log.debug("persisting {} events", totalEvents)
             ctx.self ! InternalPersist(totalEvents, 1, testName, toPersist, ack)
             Effect.none
           case InternalPersist(totalEvents, eventNr, testName, toPersist, replyTo) =>
             if (state.eventsProcessed == totalEvents) {
-              ctx.log.info("Finished persisting. Replying to {}", totalEvents, replyTo)
+              ctx.log.debug("Finished persisting {} events. Replying to {}", totalEvents, replyTo)
               replyTo ! StatusReply.ack()
               Effect.none
             } else {

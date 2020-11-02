@@ -5,19 +5,42 @@ import akka.projection.eventsourced.EventEnvelope
 import akka.projection.jdbc.scaladsl.JdbcHandler
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.util.Try
+
 class ProjectionHandler(tag: String, projectionId: Int, system: ActorSystem[_])
     extends JdbcHandler[EventEnvelope[ConfigurablePersistentActor.Event], HikariJdbcSession] {
   private val log: Logger = LoggerFactory.getLogger(getClass)
+  private var startTime = System.nanoTime()
+  private var count = 0
 
   override def process(session: HikariJdbcSession, envelope: EventEnvelope[ConfigurablePersistentActor.Event]): Unit = {
     log.trace("Event {} for tag {} test {}", envelope.event.payload, tag, envelope.event.testName)
+    count += 1
+    if (count == 1000) {
+      val durationMs = (System.nanoTime() - startTime) / 1000 / 1000
+      log.info(
+        "Projection [{}] throughput [{}] events/s in [{}] ms",
+        tag,
+        1000 * count / durationMs,
+        durationMs
+      )
+      count = 0
+      startTime = System.nanoTime()
+    }
     session.withConnection { connection =>
       require(!connection.getAutoCommit)
-      connection.createStatement()
-        .execute(s"insert into events(name, projection_id, event) values ('${envelope.event.testName}',${projectionId}, '${envelope.event.payload}')")
+      val pstmt = connection.prepareStatement("insert into events(name, projection_id, event) values (?, ?, ?)")
+      pstmt.setString(1, envelope.event.testName)
+      pstmt.setInt(2, projectionId)
+      pstmt.setString(3, envelope.event.payload)
+      pstmt.executeUpdate()
+      Try(pstmt.close())
     }
   }
 }
+
+// when using this consider reducing failure otherwise a high change of at least one grouped evenvelope causing an error
+// and no progress will be made
 class GroupedProjectionHandler(tag: String, system: ActorSystem[_])
   extends JdbcHandler[Seq[EventEnvelope[ConfigurablePersistentActor.Event]], HikariJdbcSession] {
   private val log: Logger = LoggerFactory.getLogger(getClass)
@@ -27,6 +50,8 @@ class GroupedProjectionHandler(tag: String, system: ActorSystem[_])
     session.withConnection { connection =>
       require(!connection.getAutoCommit)
       val values = envelopes.map(e => s"('${e.event.testName}', '${e.event.payload}')").mkString(",")
+
+
       connection.createStatement()
         .execute(s"insert into events(name, event) values $values")
     }

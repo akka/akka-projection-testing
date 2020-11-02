@@ -69,7 +69,7 @@ object LoadTest {
             val pid = s"${testName}-$id"
             val retried: Future[StatusReply[Done]] = retry(
               () => {
-                threadSafeLog.info("Sending message to pid {}", pid)
+                threadSafeLog.debug("Sending message to pid {}", pid)
                 shardRegion.ask[StatusReply[Done]] { replyTo => ShardingEnvelope(pid, ConfigurablePersistentActor.PersistAndAck(eventsPerActor, s"actor-$id-message", replyTo, testName))
                 }
               }, 20, 1.second, 30.seconds, 0.1)
