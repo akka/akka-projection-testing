@@ -28,7 +28,6 @@ jobs:
 #    - env: TODO add an integration tests
 #        - CMD="it:test"
 #      name: "Run integration tests"
-
 stages:
   # runs on master commits and PRs
   - name: check
