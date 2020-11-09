@@ -20,20 +20,20 @@ import akka.actor.Scheduler
 import akka.pattern.retry
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Terminated }
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior, DispatcherSelector, Terminated}
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.pattern.StatusReply
-import akka.projection.testing.LoadGeneration.{ RunTest, TestSummary }
+import akka.projection.testing.LoadGeneration.{RunTest, TestSummary}
 import akka.projection.testing.LoadTest.Start
 import akka.stream.scaladsl.Source
 import akka.util.Timeout
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 import javax.sql.DataSource
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
-import scala.concurrent.{ ExecutionContextExecutor, Future }
-import scala.concurrent.duration.{ DurationInt, DurationLong }
-import scala.util.{ Failure, Success }
+import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.duration.{DurationInt, DurationLong}
+import scala.util.{Failure, Success}
 
 object LoadGeneration {
 
@@ -50,7 +50,7 @@ object LoadGeneration {
   def apply(
       settings: EventProcessorSettings,
       shardRegion: ActorRef[ShardingEnvelope[ConfigurablePersistentActor.Command]],
-      source: DataSource): Behavior[RunTest] = Behaviors.setup { ctx =>
+      source: HikariFactory): Behavior[RunTest] = Behaviors.setup { ctx =>
     Behaviors.receiveMessage[RunTest] { rt: RunTest =>
       ctx.spawn(LoadTest(settings, rt.name, shardRegion, source), s"test-${rt.name}") ! Start(rt)
       Behaviors.same
@@ -61,7 +61,7 @@ object LoadGeneration {
 
 object LoadTest {
 
-  val threadSafeLog = LoggerFactory.getLogger("load-test")
+  val threadSafeLog: Logger = LoggerFactory.getLogger("load-test")
 
   sealed trait Command
 
@@ -75,7 +75,7 @@ object LoadTest {
       settings: EventProcessorSettings,
       testName: String,
       shardRegion: ActorRef[ShardingEnvelope[ConfigurablePersistentActor.Command]],
-      source: DataSource): Behavior[Command] = Behaviors.setup { ctx =>
+      source: HikariFactory): Behavior[Command] = Behaviors.setup { ctx =>
     import akka.actor.typed.scaladsl.AskPattern._
     // asks are retried
     implicit val timeout: Timeout = 1.seconds
@@ -126,7 +126,7 @@ object LoadTest {
             case StartValidation() =>
               ctx.log.info("TestPhase: Starting validation")
               val validation = ctx.spawn(
-                TestValidation(testName, settings.nrProjections, expected, t.seconds, source: DataSource),
+                TestValidation(testName, settings.nrProjections, expected, t.seconds, source),
                 s"TestValidation=$testName",
                 DispatcherSelector.blocking())
               ctx.watch(validation)

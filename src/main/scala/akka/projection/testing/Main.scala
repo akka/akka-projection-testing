@@ -17,7 +17,7 @@
 package akka.projection.testing
 
 import akka.actor.typed.ActorSystem
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.{Config, ConfigFactory}
 
 object Main {
 
@@ -28,23 +28,26 @@ object Main {
         val port = portString.toInt
         val httpPort = ("80" + portString.takeRight(2)).toInt
         val prometheusPort = ("900" + portString.takeRight(1)).toInt
-        startNode(port, httpPort, prometheusPort)
+        val akkaManagementPort = ("85" + portString.takeRight(2)).toInt
+        startNode(port, httpPort, prometheusPort, akkaManagementPort)
 
       case None =>
         throw new IllegalArgumentException("port number required argument")
     }
   }
 
-  def startNode(port: Int, httpPort: Int, prometheusPort: Int): Unit = {
-    ActorSystem[String](Guardian(), "test", config(port, httpPort, prometheusPort))
+  def startNode(port: Int, httpPort: Int, prometheusPort: Int, akkaManagementPort: Int): ActorSystem[_] = {
+    ActorSystem[String](Guardian(), "test", config(port, httpPort, prometheusPort, akkaManagementPort))
 
   }
 
-  def config(port: Int, httpPort: Int, prometheusPort: Int): Config = {
+  def config(port: Int, httpPort: Int, prometheusPort: Int, akkaManagementPort: Int): Config = {
     println(s"using port $port http port $httpPort prometheus port $prometheusPort")
     ConfigFactory.parseString(s"""
       akka.remote.artery.canonical.port = $port
       test.http.port = $httpPort
+      akka.management.http.port = $akkaManagementPort
+      akka.management.http.hostname = "127.0.0.1"
       cinnamon.prometheus.http-server.port = $prometheusPort
        """).withFallback(ConfigFactory.load())
   }

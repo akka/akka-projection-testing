@@ -16,7 +16,7 @@
 
 package akka.projection.testing
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{Behavior, PostStop}
 import akka.actor.typed.scaladsl.Behaviors
 import javax.sql.DataSource
 
@@ -34,7 +34,7 @@ object TestValidation {
       nrProjections: Int,
       expectedNrEvents: Long,
       timeout: FiniteDuration,
-      source: DataSource): Behavior[String] = {
+      factory: HikariFactory): Behavior[String] = {
     import scala.concurrent.duration._
     Behaviors.setup { ctx =>
       // Don't do this at home
@@ -42,12 +42,10 @@ object TestValidation {
       var previousResult: Seq[Int] = Nil
       def validate(): ValidationResult = {
         val results: Seq[Int] = (0 until nrProjections).map { projectionId =>
-          val connection = source.getConnection
-          try {
-            val resultSet = connection
-              .createStatement()
-              .executeQuery(s"select count(*) from events where name = '$testName' and projection_id = $projectionId")
-            if (resultSet.next()) {
+          factory.newSession().withConnection { conn =>
+            val statement = conn.createStatement()
+              val resultSet = statement.executeQuery(s"select count(*) from events where name = '$testName' and projection_id = $projectionId")
+            val result = if (resultSet.next()) {
               val count = resultSet.getInt("count")
               ctx.log.info(
                 "Test [{}]. Projection id: [{}]. Expected {} got {}!",
@@ -59,8 +57,10 @@ object TestValidation {
             } else {
               throw new RuntimeException("Expected single row")
             }
-          } finally {
-            connection.close()
+            resultSet.close()
+            statement.close()
+
+            result
           }
         }
 
@@ -80,27 +80,43 @@ object TestValidation {
           }
         }
       }
+      def writeResult(result: String): Unit = {
+        val session = factory.newSession()
+        session.withConnection { connection =>
+          connection.createStatement().execute(s"insert into results(name, result) values ('${testName}', '$result')")
+        }
+        session.commit()
 
+      }
       Behaviors.withTimers { timers =>
         timers.startTimerAtFixedRate("test", 2.seconds)
         timers.startSingleTimer("timeout", timeout)
-        Behaviors.receiveMessage {
+
+        Behaviors.receiveMessage[String] {
           case "test" =>
             validate() match {
               case Pass =>
+                writeResult("pass")
                 ctx.log.info("TestPhase: Validated. Stopping")
                 Behaviors.stopped
               case Fail =>
                 Behaviors.same
               case NoChange =>
+                writeResult("stuck")
                 ctx.log.error("TestPhase: Results are not changing. Stopping")
                 Behaviors.stopped
             }
           case "timeout" =>
             ctx.log.error("TestPhase: Timout out")
+            writeResult("timeout")
+            Behaviors.stopped
+        }.receiveSignal {
+          case (_, PostStop) =>
             Behaviors.stopped
         }
       }
+
+
     }
   }
 }

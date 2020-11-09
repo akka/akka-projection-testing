@@ -1,4 +1,3 @@
-
 create table if not exists "AKKA_PROJECTION_OFFSET_STORE" (
   "PROJECTION_NAME" VARCHAR(255) NOT NULL,
   "PROJECTION_KEY" VARCHAR(255) NOT NULL,
@@ -18,5 +17,9 @@ create table if not exists events (
     constraint pkey primary key (name, projection_id, event)
 );
 
+create table if not exists results (
+    name varchar(256) primary key,
+    result varchar(256)
+);
 
 
