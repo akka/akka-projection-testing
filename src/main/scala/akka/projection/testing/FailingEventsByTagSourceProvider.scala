@@ -1,5 +1,20 @@
-package akka.projection.testing
+/*
+ * Copyright 2020 Lightbend Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
+package akka.projection.testing
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
@@ -21,9 +36,9 @@ import scala.util.control.NoStackTrace
 object FailingEventsByTagSourceProvider {
 
   def eventsByTag[Event](
-                          system: ActorSystem[_],
-                          readJournalPluginId: String,
-                          tag: String): SourceProvider[Offset, EventEnvelope[Event]] = {
+      system: ActorSystem[_],
+      readJournalPluginId: String,
+      tag: String): SourceProvider[Offset, EventEnvelope[Event]] = {
 
     val eventsByTagQuery =
       PersistenceQuery(system).readJournalFor[EventsByTagQuery](readJournalPluginId)
@@ -32,15 +47,15 @@ object FailingEventsByTagSourceProvider {
   }
 
   private class FailingEventsByTagSourceProvider[Event](
-                                                  eventsByTagQuery: EventsByTagQuery,
-                                                  tag: String,
-                                                  system: ActorSystem[_])
-    extends SourceProvider[Offset, EventEnvelope[Event]] {
+      eventsByTagQuery: EventsByTagQuery,
+      tag: String,
+      system: ActorSystem[_])
+      extends SourceProvider[Offset, EventEnvelope[Event]] {
     implicit val executionContext: ExecutionContext = system.executionContext
     private val failEvery = {
       system.settings.config.getString("test.projection-failure-every").toLowerCase() match {
         case "off" => Int.MaxValue
-        case _ => system.settings.config.getInt("test.projection-failure-every")
+        case _     => system.settings.config.getInt("test.projection-failure-every")
       }
     }
 
@@ -51,7 +66,9 @@ object FailingEventsByTagSourceProvider {
           .eventsByTag(tag, offset)
           .map { env =>
             if (failEvery != Int.MaxValue && Random.nextInt(failEvery) == 1) {
-              throw new RuntimeException(s"Persistence id ${env.persistenceId} sequence nr ${env.sequenceNr} offset ${env.offset} Restart the stream!") with NoStackTrace
+              throw new RuntimeException(
+                s"Persistence id ${env.persistenceId} sequence nr ${env.sequenceNr} offset ${env.offset} Restart the stream!")
+                with NoStackTrace
             }
             env
           }
@@ -64,4 +81,3 @@ object FailingEventsByTagSourceProvider {
     override def extractCreationTime(envelope: EventEnvelope[Event]): Long = envelope.timestamp
   }
 }
-

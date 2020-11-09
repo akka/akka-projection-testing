@@ -1,31 +1,45 @@
+/*
+ * Copyright 2020 Lightbend Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package akka.projection.testing
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess
-import akka.cluster.sharding.typed.{ClusterShardingSettings, ShardedDaemonProcessSettings}
+import akka.cluster.sharding.typed.{ ClusterShardingSettings, ShardedDaemonProcessSettings }
 import akka.cluster.typed.Cluster
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.query.Offset
 import akka.projection.eventsourced.EventEnvelope
 import akka.projection.jdbc.scaladsl.JdbcProjection
 import akka.projection.scaladsl.SourceProvider
-import akka.projection.{ProjectionBehavior, ProjectionId}
-import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+import akka.projection.{ ProjectionBehavior, ProjectionId }
+import com.zaxxer.hikari.{ HikariConfig, HikariDataSource }
 
 object Guardian {
 
-  def createProjectionFor(
-                           projectionIndex: Int,
-                           tagIndex: Int,
-                           factory: HikariFactory
-                         )(implicit system: ActorSystem[_]) = {
+  def createProjectionFor(projectionIndex: Int, tagIndex: Int, factory: HikariFactory)(
+      implicit system: ActorSystem[_]) = {
     val tag = ConfigurablePersistentActor.tagFor(projectionIndex, tagIndex)
 
-    val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] = FailingEventsByTagSourceProvider.eventsByTag[ConfigurablePersistentActor.Event](
-      system = system,
-      readJournalPluginId = CassandraReadJournal.Identifier,
-      tag = tag)
+    val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
+      FailingEventsByTagSourceProvider.eventsByTag[ConfigurablePersistentActor.Event](
+        system = system,
+        readJournalPluginId = CassandraReadJournal.Identifier,
+        tag = tag)
 
     //    JdbcProjection.groupedWithin(
     //      projectionId = ProjectionId("test-projection-id", tag),
@@ -38,8 +52,7 @@ object Guardian {
       projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
       sourceProvider,
       () => factory.newSession(),
-      () => new ProjectionHandler(tag, projectionIndex, system)
-    )
+      () => new ProjectionHandler(tag, projectionIndex, system))
   }
 
   def apply(): Behavior[String] = {
@@ -55,7 +68,8 @@ object Guardian {
       val dataSource = new HikariDataSource(config)
       val settings = EventProcessorSettings(system)
       val shardRegion = ConfigurablePersistentActor.init(settings, system)
-      val loadGeneration: ActorRef[LoadGeneration.RunTest] = context.spawn(LoadGeneration(settings, shardRegion, dataSource), "load-generation")
+      val loadGeneration: ActorRef[LoadGeneration.RunTest] =
+        context.spawn(LoadGeneration(settings, shardRegion, dataSource), "load-generation")
 
       val httpPort = system.settings.config.getInt("test.http.port")
 
@@ -80,9 +94,7 @@ object Guardian {
             Some(ProjectionBehavior.Stop))
         }
 
-
       }
-
 
       Behaviors.empty
     }
