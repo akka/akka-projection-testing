@@ -29,11 +29,11 @@ jobs:
 #        - CMD="it:test"
 #      name: "Run integration tests"
 stages:
-  # runs on master commits and PRs
+  # runs on main commits and PRs
   - name: check
     if: NOT tag =~ ^v
 
-  # runs on master commits and PRs
+  # runs on main commits and PRs
   - name: test
     if: NOT tag =~ ^v
 
@@ -52,9 +52,3 @@ cache:
     - $HOME/.sbt/launchers
     - $HOME/.cache/coursier
     - $HOME/.jabba
-
-# safelist
-branches:
-  only:
-    - master
-    - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
