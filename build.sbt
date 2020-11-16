@@ -46,7 +46,7 @@ lazy val `akka-projection-testing` = project
 //        Cinnamon.library.cinnamonPrometheusHttpServer,
 //        Cinnamon.library.cinnamonAkkaTyped,
 //        Cinnamon.library.cinnamonAkkaPersistence
-        ),
+      ),
 //    cinnamon in run := true,
     Global / cancelable := false, // ctrl-c
     mainClass in (Compile, run) := Some("akka.projection.testing.Main"),
@@ -55,7 +55,7 @@ lazy val `akka-projection-testing` = project
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
     logBuffered in Test := false)
-//  .enablePlugins(Cinnamon)
+  //  .enablePlugins(Cinnamon)
   .configs(IntegrationTest)
 
 TaskKey[Unit]("verifyCodeFmt") := {
