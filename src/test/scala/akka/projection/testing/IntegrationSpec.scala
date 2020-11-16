@@ -17,20 +17,19 @@
 package akka.projection.testing
 
 import akka.actor.ActorSystem
+import akka.actor.typed.scaladsl.adapter._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpEntity, HttpMethods, HttpRequest, StatusCodes }
-import akka.management.cluster.{ ClusterHttpManagementJsonProtocol, ClusterMembers }
+import akka.http.scaladsl.client.RequestBuilding.Post
+import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
+import akka.http.scaladsl.unmarshalling._
+import akka.management.cluster.{ClusterHttpManagementJsonProtocol, ClusterMembers}
+import akka.projection.testing.TestRoutes.{RunTest, _}
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.{ Eventually, ScalaFutures }
-import org.scalatest.time.{ Milliseconds, Seconds, Span }
-import org.scalatest.wordspec.AnyWordSpec
-import akka.http.scaladsl.unmarshalling._
-import akka.actor.typed.scaladsl.adapter._
-import akka.projection.testing.TestRoutes.RunTest
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
-import TestRoutes._
-import akka.http.scaladsl.client.RequestBuilding.Post
+import org.scalatest.time.{Milliseconds, Seconds, Span}
+import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
@@ -53,8 +52,8 @@ class IntegrationSpec
   "End to end test" should {
     "work" in {
       systems += Main.startNode(2551, 8051, 9001, 8551).toClassic
-      systems += Main.startNode(2552, 8052, 9002, 8552).toClassic
       validateAllMembersUp(8551)
+      systems += Main.startNode(2552, 8052, 9002, 8552).toClassic
       validateAllMembersUp(8552)
 
       val test = RunTest("", 100, 1, 100, 10000)

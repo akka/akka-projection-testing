@@ -28,7 +28,6 @@ import akka.projection.testing.LoadTest.Start
 import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import akka.{ Done, NotUsed }
-import javax.sql.DataSource
 import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }

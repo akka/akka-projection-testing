@@ -18,7 +18,6 @@ package akka.projection.testing
 
 import akka.actor.typed.{ Behavior, PostStop }
 import akka.actor.typed.scaladsl.Behaviors
-import javax.sql.DataSource
 
 import scala.concurrent.duration.FiniteDuration
 
