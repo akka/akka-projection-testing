@@ -34,7 +34,7 @@ import scala.io.Source
 
 object Guardian {
 
-  def createProjectionFor(projectionIndex: Int, tagIndex: Int, factory: HikariFactory)(
+  def createProjectionFor(projectionIndex: Int, tagIndex: Int, factory: HikariJdbcSessionFactory)(
       implicit system: ActorSystem[_]) = {
     val tag = ConfigurablePersistentActor.tagFor(projectionIndex, tagIndex)
 
@@ -77,30 +77,28 @@ object Guardian {
       finally schemaFile.close()
 
       // Block until schema is created. Only one of these actors are created
-      val dbSessionFactory: HikariFactory = new HikariFactory(dataSource)
+      val dbSessionFactory: HikariJdbcSessionFactory = new HikariJdbcSessionFactory(dataSource)
 
-      val session = dbSessionFactory.newSession()
+      val connection = dataSource.getConnection()
 
       try {
-        session.withConnection { con =>
-          con.createStatement().execute(postgresSchema)
-        }
+        connection.createStatement().execute(postgresSchema)
+        connection.commit()
       } catch {
         case t: Throwable => context.log.error("Failed to create postgres schema. Assuming it already exists.", t)
       } finally {
-        session.commit()
-        session.close()
+        connection.close()
       }
 
       val settings = EventProcessorSettings(system)
       val shardRegion = ConfigurablePersistentActor.init(settings, system)
 
       val loadGeneration: ActorRef[LoadGeneration.RunTest] =
-        context.spawn(LoadGeneration(settings, shardRegion, dbSessionFactory), "load-generation")
+        context.spawn(LoadGeneration(settings, shardRegion, dataSource), "load-generation")
 
       val httpPort = system.settings.config.getInt("test.http.port")
 
-      val server = new HttpServer(new TestRoutes(loadGeneration, dbSessionFactory).route, httpPort)
+      val server = new HttpServer(new TestRoutes(loadGeneration, dataSource).route, httpPort)
       server.start()
 
       if (Cluster(system).selfMember.hasRole("read-model")) {

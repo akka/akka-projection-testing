@@ -24,6 +24,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.stream.alpakka.cassandra.scaladsl.CassandraSessionRegistry
 import akka.util.Timeout
+import javax.sql.DataSource
 import org.slf4j.LoggerFactory
 import spray.json.DefaultJsonProtocol._
 import spray.json.RootJsonFormat
@@ -42,7 +43,7 @@ object TestRoutes {
   implicit val testResultFormat: RootJsonFormat[Response] = jsonFormat2(Response)
 }
 
-class TestRoutes(loadGeneration: ActorRef[LoadGeneration.RunTest], factory: HikariFactory)(
+class TestRoutes(loadGeneration: ActorRef[LoadGeneration.RunTest], dataSource: DataSource)(
     implicit val system: ActorSystem[_]) {
 
   private val log = LoggerFactory.getLogger(classOf[TestRoutes])
@@ -57,23 +58,21 @@ class TestRoutes(loadGeneration: ActorRef[LoadGeneration.RunTest], factory: Hika
         pathPrefix("test" / Segment) {
           testName =>
             println("get test result: " + testName)
-            val session = factory.newSession()
+            val connection = dataSource.getConnection
             val result = try {
-              session.withConnection { con =>
-                val ps = con.prepareStatement(s"select * from results where name = ?")
-                ps.setString(1, testName)
-                val resultSet = ps.executeQuery()
-                val result = if (resultSet.next()) {
-                  resultSet.getString("result")
-                } else {
-                  // no result yet
-                  "not finished"
-                }
-                resultSet.close()
-                result
+              val ps = connection.prepareStatement(s"select * from results where name = ?")
+              ps.setString(1, testName)
+              val resultSet = ps.executeQuery()
+              val result = if (resultSet.next()) {
+                resultSet.getString("result")
+              } else {
+                // no result yet
+                "not finished"
               }
+              resultSet.close()
+              result
             } finally {
-              session.close()
+              connection.close()
             }
             println("Returning " + result)
             complete(result)

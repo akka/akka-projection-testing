@@ -18,6 +18,7 @@ package akka.projection.testing
 
 import akka.actor.typed.{ Behavior, PostStop }
 import akka.actor.typed.scaladsl.Behaviors
+import javax.sql.DataSource
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -33,7 +34,7 @@ object TestValidation {
       nrProjections: Int,
       expectedNrEvents: Long,
       timeout: FiniteDuration,
-      factory: HikariFactory): Behavior[String] = {
+      source: DataSource): Behavior[String] = {
     import scala.concurrent.duration._
     Behaviors.setup { ctx =>
       // Don't do this at home
@@ -41,7 +42,8 @@ object TestValidation {
       var previousResult: Seq[Int] = Nil
       def validate(): ValidationResult = {
         val results: Seq[Int] = (0 until nrProjections).map { projectionId =>
-          factory.newSession().withConnection { conn =>
+          val conn = source.getConnection()
+          try {
             val statement = conn.createStatement()
             val resultSet = statement.executeQuery(
               s"select count(*) from events where name = '$testName' and projection_id = $projectionId")
@@ -58,9 +60,9 @@ object TestValidation {
               throw new RuntimeException("Expected single row")
             }
             resultSet.close()
-            statement.close()
-
             result
+          } finally {
+            conn.close()
           }
         }
 
@@ -81,12 +83,9 @@ object TestValidation {
         }
       }
       def writeResult(result: String): Unit = {
-        val session = factory.newSession()
-        session.withConnection { connection =>
-          connection.createStatement().execute(s"insert into results(name, result) values ('${testName}', '$result')")
-        }
-        session.commit()
-
+        val conn = source.getConnection()
+        conn.createStatement().execute(s"insert into results(name, result) values ('${testName}', '$result')")
+        conn.commit()
       }
       Behaviors.withTimers { timers =>
         timers.startTimerAtFixedRate("test", 2.seconds)

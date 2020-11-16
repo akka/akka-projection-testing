@@ -28,6 +28,7 @@ import akka.projection.testing.LoadTest.Start
 import akka.stream.scaladsl.Source
 import akka.util.Timeout
 import akka.{ Done, NotUsed }
+import javax.sql.DataSource
 import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
@@ -49,7 +50,7 @@ object LoadGeneration {
   def apply(
       settings: EventProcessorSettings,
       shardRegion: ActorRef[ShardingEnvelope[ConfigurablePersistentActor.Command]],
-      source: HikariFactory): Behavior[RunTest] = Behaviors.setup { ctx =>
+      source: DataSource): Behavior[RunTest] = Behaviors.setup { ctx =>
     Behaviors.receiveMessage[RunTest] { rt: RunTest =>
       ctx.spawn(LoadTest(settings, rt.name, shardRegion, source), s"test-${rt.name}") ! Start(rt)
       Behaviors.same
@@ -74,7 +75,7 @@ object LoadTest {
       settings: EventProcessorSettings,
       testName: String,
       shardRegion: ActorRef[ShardingEnvelope[ConfigurablePersistentActor.Command]],
-      source: HikariFactory): Behavior[Command] = Behaviors.setup { ctx =>
+      source: DataSource): Behavior[Command] = Behaviors.setup { ctx =>
     import akka.actor.typed.scaladsl.AskPattern._
     // asks are retried
     implicit val timeout: Timeout = 1.seconds
