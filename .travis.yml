@@ -12,7 +12,7 @@ script:
   - jabba install adopt@~1.11-0
   - jabba use adopt@~1.11-0
   - java -version
-  - $SETUP sbt -jvm-opts .jvmopts-travis "$CMD"
+  - $SETUP && sbt -jvm-opts .jvmopts-travis "$CMD"
 
 jobs:
   include:
@@ -22,7 +22,7 @@ jobs:
 
     - stage: test
       env:
-        - SETUP="docker compose up -d" && CMD="test"
+        - SETUP="docker-compose up -d" CMD="test"
       name: "Run tests tests "
 
 stages:
