@@ -16,7 +16,7 @@
 
 package akka.projection.testing
 
-import akka.actor.typed.{Behavior, PostStop}
+import akka.actor.typed.{ Behavior, PostStop }
 import akka.actor.typed.scaladsl.Behaviors
 import javax.sql.DataSource
 
@@ -44,7 +44,8 @@ object TestValidation {
         val results: Seq[Int] = (0 until nrProjections).map { projectionId =>
           factory.newSession().withConnection { conn =>
             val statement = conn.createStatement()
-              val resultSet = statement.executeQuery(s"select count(*) from events where name = '$testName' and projection_id = $projectionId")
+            val resultSet = statement.executeQuery(
+              s"select count(*) from events where name = '$testName' and projection_id = $projectionId")
             val result = if (resultSet.next()) {
               val count = resultSet.getInt("count")
               ctx.log.info(
@@ -92,30 +93,31 @@ object TestValidation {
         timers.startTimerAtFixedRate("test", 2.seconds)
         timers.startSingleTimer("timeout", timeout)
 
-        Behaviors.receiveMessage[String] {
-          case "test" =>
-            validate() match {
-              case Pass =>
-                writeResult("pass")
-                ctx.log.info("TestPhase: Validated. Stopping")
-                Behaviors.stopped
-              case Fail =>
-                Behaviors.same
-              case NoChange =>
-                writeResult("stuck")
-                ctx.log.error("TestPhase: Results are not changing. Stopping")
-                Behaviors.stopped
-            }
-          case "timeout" =>
-            ctx.log.error("TestPhase: Timout out")
-            writeResult("timeout")
-            Behaviors.stopped
-        }.receiveSignal {
-          case (_, PostStop) =>
-            Behaviors.stopped
-        }
+        Behaviors
+          .receiveMessage[String] {
+            case "test" =>
+              validate() match {
+                case Pass =>
+                  writeResult("pass")
+                  ctx.log.info("TestPhase: Validated. Stopping")
+                  Behaviors.stopped
+                case Fail =>
+                  Behaviors.same
+                case NoChange =>
+                  writeResult("stuck")
+                  ctx.log.error("TestPhase: Results are not changing. Stopping")
+                  Behaviors.stopped
+              }
+            case "timeout" =>
+              ctx.log.error("TestPhase: Timout out")
+              writeResult("timeout")
+              Behaviors.stopped
+          }
+          .receiveSignal {
+            case (_, PostStop) =>
+              Behaviors.stopped
+          }
       }
-
 
     }
   }

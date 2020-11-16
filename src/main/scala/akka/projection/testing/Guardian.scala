@@ -17,9 +17,9 @@
 package akka.projection.testing
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, PostStop}
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, PostStop }
 import akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess
-import akka.cluster.sharding.typed.{ClusterShardingSettings, ShardedDaemonProcessSettings}
+import akka.cluster.sharding.typed.{ ClusterShardingSettings, ShardedDaemonProcessSettings }
 import akka.cluster.typed.Cluster
 import akka.management.scaladsl.AkkaManagement
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
@@ -27,8 +27,8 @@ import akka.persistence.query.Offset
 import akka.projection.eventsourced.EventEnvelope
 import akka.projection.jdbc.scaladsl.JdbcProjection
 import akka.projection.scaladsl.SourceProvider
-import akka.projection.{ProjectionBehavior, ProjectionId}
-import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+import akka.projection.{ ProjectionBehavior, ProjectionId }
+import com.zaxxer.hikari.{ HikariConfig, HikariDataSource }
 
 import scala.io.Source
 
@@ -72,9 +72,9 @@ object Guardian {
       Class.forName("org.postgresql.Driver")
       val dataSource = new HikariDataSource(config)
 
-
       val schemaFile = Source.fromResource("projection.sql")
-      val postgresSchema = try schemaFile.mkString finally schemaFile.close()
+      val postgresSchema = try schemaFile.mkString
+      finally schemaFile.close()
 
       // Block until schema is created. Only one of these actors are created
       val dbSessionFactory: HikariFactory = new HikariFactory(dataSource)

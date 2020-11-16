@@ -17,7 +17,7 @@
 package akka.projection.testing
 
 import akka.actor.typed.ActorSystem
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 
 object Main {
 

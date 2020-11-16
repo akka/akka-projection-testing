@@ -20,20 +20,20 @@ import akka.actor.Scheduler
 import akka.pattern.retry
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, DispatcherSelector, Terminated}
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Terminated }
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.pattern.StatusReply
-import akka.projection.testing.LoadGeneration.{RunTest, TestSummary}
+import akka.projection.testing.LoadGeneration.{ RunTest, TestSummary }
 import akka.projection.testing.LoadTest.Start
 import akka.stream.scaladsl.Source
 import akka.util.Timeout
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import javax.sql.DataSource
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.concurrent.duration.{DurationInt, DurationLong}
-import scala.util.{Failure, Success}
+import scala.concurrent.{ ExecutionContextExecutor, Future }
+import scala.concurrent.duration.{ DurationInt, DurationLong }
+import scala.util.{ Failure, Success }
 
 object LoadGeneration {
 

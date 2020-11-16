@@ -18,12 +18,12 @@ package akka.projection.testing
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpEntity, HttpMethods, HttpRequest, StatusCodes}
-import akka.management.cluster.{ClusterHttpManagementJsonProtocol, ClusterMembers}
+import akka.http.scaladsl.model.{ HttpEntity, HttpMethods, HttpRequest, StatusCodes }
+import akka.management.cluster.{ ClusterHttpManagementJsonProtocol, ClusterMembers }
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.time.{Milliseconds, Seconds, Span}
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
+import org.scalatest.time.{ Milliseconds, Seconds, Span }
 import org.scalatest.wordspec.AnyWordSpec
 import akka.http.scaladsl.unmarshalling._
 import akka.actor.typed.scaladsl.adapter._
@@ -36,9 +36,16 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.Try
 
-class IntegrationSpec extends AnyWordSpec with Eventually with BeforeAndAfterAll with ScalaFutures with ClusterHttpManagementJsonProtocol with Matchers {
+class IntegrationSpec
+    extends AnyWordSpec
+    with Eventually
+    with BeforeAndAfterAll
+    with ScalaFutures
+    with ClusterHttpManagementJsonProtocol
+    with Matchers {
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(timeout = Span(25, Seconds), interval = Span(500, Milliseconds))
+  override implicit val patienceConfig: PatienceConfig =
+    PatienceConfig(timeout = Span(25, Seconds), interval = Span(500, Milliseconds))
   implicit val testSystem: ActorSystem = ActorSystem()
   implicit val ec: ExecutionContextExecutor = testSystem.dispatcher
   private var systems: Set[ActorSystem] = Set(testSystem)
@@ -51,14 +58,16 @@ class IntegrationSpec extends AnyWordSpec with Eventually with BeforeAndAfterAll
       validateAllMembersUp(8552)
 
       val test = RunTest("", 100, 1, 100, 10000)
-      val response = Unmarshal(Http().singleRequest(
-        Post("http://127.0.0.1:8051/test", test)
-      ).futureValue.entity).to[Response].futureValue
+      val response = Unmarshal(Http().singleRequest(Post("http://127.0.0.1:8051/test", test)).futureValue.entity)
+        .to[Response]
+        .futureValue
 
       eventually {
-        val result = Unmarshal(Http().singleRequest(
-          HttpRequest(uri = s"http://127.0.0.1:8051/test/${response.testName}")
-        ).futureValue.entity).to[String].futureValue
+        val result = Unmarshal(
+          Http()
+            .singleRequest(HttpRequest(uri = s"http://127.0.0.1:8051/test/${response.testName}"))
+            .futureValue
+            .entity).to[String].futureValue
         println("got result: " + result)
         result shouldEqual "pass"
       }
@@ -67,19 +76,22 @@ class IntegrationSpec extends AnyWordSpec with Eventually with BeforeAndAfterAll
 
   def validateAllMembersUp(port: Int): Unit = {
     eventually {
-      val members = Http().singleRequest(HttpRequest(uri = s"http://127.0.0.1:$port/cluster/members")).flatMap { response =>
-        response.status match {
-          case StatusCodes.OK =>
-            Unmarshal(response).to[ClusterMembers]
-          case other =>
-            throw new RuntimeException(s"Unexpected status code: $other with body ${response.entity.toStrict(100.millis).futureValue}")
+      val members = Http()
+        .singleRequest(HttpRequest(uri = s"http://127.0.0.1:$port/cluster/members"))
+        .flatMap { response =>
+          response.status match {
+            case StatusCodes.OK =>
+              Unmarshal(response).to[ClusterMembers]
+            case other =>
+              throw new RuntimeException(
+                s"Unexpected status code: $other with body ${response.entity.toStrict(100.millis).futureValue}")
+          }
         }
-      }.futureValue
+        .futureValue
       members.members.size shouldEqual 2
       members.members.map(_.status.toLowerCase()) shouldEqual Set("up")
     }
   }
-
 
   override protected def afterAll(): Unit = {
     systems.foreach { system =>
