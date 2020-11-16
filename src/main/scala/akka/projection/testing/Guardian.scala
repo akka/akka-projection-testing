@@ -81,12 +81,16 @@ object Guardian {
 
       val session = dbSessionFactory.newSession()
 
-      session.withConnection { con =>
-        con.createStatement().execute(postgresSchema)
+      try {
+        session.withConnection { con =>
+          con.createStatement().execute(postgresSchema)
+        }
+      } catch {
+        case t: Throwable => context.log.error("Failed to create postgres schema. Assuming it already exists.", t)
+      } finally {
+        session.commit()
+        session.close()
       }
-
-      session.commit()
-      session.close()
 
       val settings = EventProcessorSettings(system)
       val shardRegion = ConfigurablePersistentActor.init(settings, system)
