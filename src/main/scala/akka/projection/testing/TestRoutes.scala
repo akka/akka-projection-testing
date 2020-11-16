@@ -57,18 +57,23 @@ class TestRoutes(loadGeneration: ActorRef[LoadGeneration.RunTest], factory: Hika
         pathPrefix("test" / Segment) {
           testName =>
             println("get test result: " + testName)
-            val result = factory.newSession().withConnection { con =>
-              val ps = con.prepareStatement(s"select * from results where name = ?")
-              ps.setString(1, testName)
-              val resultSet = ps.executeQuery()
-              val result = if (resultSet.next()) {
-                resultSet.getString("result")
-              } else {
-                // no result yet
-                "not finished"
+            val session = factory.newSession()
+            val result = try {
+              session.withConnection { con =>
+                val ps = con.prepareStatement(s"select * from results where name = ?")
+                ps.setString(1, testName)
+                val resultSet = ps.executeQuery()
+                val result = if (resultSet.next()) {
+                  resultSet.getString("result")
+                } else {
+                  // no result yet
+                  "not finished"
+                }
+                resultSet.close()
+                result
               }
-              resultSet.close()
-              result
+            } finally {
+              session.close()
             }
             println("Returning " + result)
             complete(result)

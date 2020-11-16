@@ -67,7 +67,7 @@ object Guardian {
       config.setJdbcUrl("jdbc:postgresql://127.0.0.1:5432/")
       config.setUsername("docker")
       config.setPassword("docker")
-      config.setMaximumPoolSize(10)
+      config.setMaximumPoolSize(20)
       config.setAutoCommit(false)
       Class.forName("org.postgresql.Driver")
       val dataSource = new HikariDataSource(config)
