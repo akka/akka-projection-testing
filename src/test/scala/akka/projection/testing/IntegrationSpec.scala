@@ -52,9 +52,9 @@ class IntegrationSpec
   "End to end test" should {
     "work" in {
       systems += Main.startNode(2551, 8051, 9001, 8551).toClassic
-      validateAllMembersUp(8551)
+      validateAllMembersUp(8551, 1)
       systems += Main.startNode(2552, 8052, 9002, 8552).toClassic
-      validateAllMembersUp(8552)
+      validateAllMembersUp(8552, 2)
 
       val test = RunTest("", 100, 1, 100, 10000)
       val response = Unmarshal(Http().singleRequest(Post("http://127.0.0.1:8051/test", test)).futureValue.entity)
@@ -73,7 +73,7 @@ class IntegrationSpec
     }
   }
 
-  def validateAllMembersUp(port: Int): Unit = {
+  def validateAllMembersUp(port: Int, nr: Int): Unit = {
     eventually {
       val members = Http()
         .singleRequest(HttpRequest(uri = s"http://127.0.0.1:$port/cluster/members"))
@@ -87,7 +87,7 @@ class IntegrationSpec
           }
         }
         .futureValue
-      members.members.size shouldEqual 2
+      members.members.size shouldEqual nr
       members.members.map(_.status.toLowerCase()) shouldEqual Set("up")
     }
   }
