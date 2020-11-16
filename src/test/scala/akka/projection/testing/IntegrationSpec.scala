@@ -20,15 +20,15 @@ import akka.actor.ActorSystem
 import akka.actor.typed.scaladsl.adapter._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding.Post
-import akka.http.scaladsl.model.{HttpRequest, StatusCodes}
+import akka.http.scaladsl.model.{ HttpRequest, StatusCodes }
 import akka.http.scaladsl.unmarshalling._
-import akka.management.cluster.{ClusterHttpManagementJsonProtocol, ClusterMembers}
-import akka.projection.testing.TestRoutes.{RunTest, _}
+import akka.management.cluster.{ ClusterHttpManagementJsonProtocol, ClusterMembers }
+import akka.projection.testing.TestRoutes.{ RunTest, _ }
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Milliseconds, Seconds, Span}
+import org.scalatest.time.{ Milliseconds, Seconds, Span }
 import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.ExecutionContextExecutor
