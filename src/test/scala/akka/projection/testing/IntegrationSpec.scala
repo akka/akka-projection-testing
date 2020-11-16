@@ -31,7 +31,6 @@ import akka.projection.testing.TestRoutes.RunTest
 import org.scalatest.matchers.should.Matchers
 import TestRoutes._
 import akka.http.scaladsl.client.RequestBuilding.Post
-import akka.http.scaladsl.marshalling.Marshal
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
