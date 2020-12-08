@@ -1,0 +1,51 @@
+language: scala
+services:
+  - docker
+
+before_install:
+  # using jabba for custom jdk management
+  - if [ ! -f ~/.jabba/jabba.sh ]; then curl -L -v --retry 5 -o jabba-install.sh https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh && bash jabba-install.sh; fi
+  - . ~/.jabba/jabba.sh
+
+# default script for jobs, that do not have any specified
+script:
+  - jabba install adopt@~1.11-0
+  - jabba use adopt@~1.11-0
+  - java -version
+  - $SETUP && sbt -jvm-opts .jvmopts-travis "$CMD"
+
+jobs:
+  include:
+    - stage: check
+      env: CMD="verifyCodeStyle"
+      name: "Code style check. Run locally with: sbt verifyCodeStyle"
+
+    - stage: test
+      env:
+        - SETUP="docker-compose up -d" CMD="test"
+      name: "Run tests tests "
+
+stages:
+  # runs on main commits and PRs
+  - name: check
+    if: NOT tag =~ ^v
+
+  # runs on main commits and PRs
+  - name: test
+    if: NOT tag =~ ^v
+
+after_failure:
+  - docker-compose logs
+
+before_cache:
+  - find $HOME/.ivy2 -name "ivydata-*.properties" -delete
+  - find $HOME/.sbt -name "*.lock" -delete
+
+cache:
+  directories:
+    - $HOME/.m2
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/boot
+    - $HOME/.sbt/launchers
+    - $HOME/.cache/coursier
+    - $HOME/.jabba
