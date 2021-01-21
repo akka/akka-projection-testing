@@ -57,7 +57,7 @@ class ProjectionHandler(tag: String, projectionId: Int, system: ActorSystem[_])
 
 // when using this consider reducing failure otherwise a high change of at least one grouped envelope causing an error
 // and no progress will be made
-class GroupedProjectionHandler(tag: String, system: ActorSystem[_])
+class GroupedProjectionHandler(tag: String, projectionId: Int, system: ActorSystem[_])
     extends JdbcHandler[Seq[EventEnvelope[ConfigurablePersistentActor.Event]], HikariJdbcSession] {
   private val log: Logger = LoggerFactory.getLogger(getClass)
 
@@ -71,9 +71,10 @@ class GroupedProjectionHandler(tag: String, system: ActorSystem[_])
       envelopes.headOption.map(_.event.testName).getOrElse("<unknown>"))
     session.withConnection { connection =>
       require(!connection.getAutoCommit)
-      val values = envelopes.map(e => s"('${e.event.testName}', '${e.event.payload}')").mkString(",")
+      // TODO ps
+      val values = envelopes.map(e => s"('${e.event.testName}', '$projectionId', '${e.event.payload}')").mkString(",")
 
-      connection.createStatement().execute(s"insert into events(name, event) values $values")
+      connection.createStatement().execute(s"insert into events(name, projection_id, event) values $values")
     }
   }
 }

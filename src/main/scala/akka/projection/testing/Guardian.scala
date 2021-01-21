@@ -45,22 +45,17 @@ object Guardian {
 
     val tag = ConfigurablePersistentActor.tagFor(projectionIndex, tagIndex)
 
-    // FIXME put this back in
-//      val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
-//      FailingEventsByTagSourceProvider.eventsByTag[ConfigurablePersistentActor.Event](
-//        system = system,
-//        readJournalPluginId = journalPluginId,
-//        tag = tag)
-
     val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
-      EventSourcedProvider
-        .eventsByTag[ConfigurablePersistentActor.Event](system, readJournalPluginId = journalPluginId, tag = tag)
-    //    JdbcProjection.groupedWithin(
-    //      projectionId = ProjectionId("test-projection-id", tag),
-    //      sourceProvider,
-    //      () => factory.newSession(),
-    //      () => new GroupedProjectionHandler(tag, system)
-    //    )
+      FailingEventsByTagSourceProvider.eventsByTag[ConfigurablePersistentActor.Event](
+        system = system,
+        readJournalPluginId = journalPluginId,
+        tag = tag)
+
+//    JdbcProjection.groupedWithin(
+//      projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
+//      sourceProvider,
+//      () => factory.newSession(),
+//      () => new GroupedProjectionHandler(tag, projectionIndex, system))
     JdbcProjection.exactlyOnce(
       projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
       sourceProvider,
