@@ -30,7 +30,12 @@ class ProjectionHandler(tag: String, projectionId: Int, system: ActorSystem[_])
   private var count = 0
 
   override def process(session: HikariJdbcSession, envelope: EventEnvelope[ConfigurablePersistentActor.Event]): Unit = {
-    log.trace("Event {} for tag {} test {}", envelope.event.payload, tag, envelope.event.testName)
+    log.info(
+      "Event {} for tag {} sequence {} test {}",
+      envelope.event.payload,
+      tag,
+      envelope.offset,
+      envelope.event.testName)
     count += 1
     if (count == 1000) {
       val durationMs = (System.nanoTime() - startTime) / 1000 / 1000
@@ -50,7 +55,7 @@ class ProjectionHandler(tag: String, projectionId: Int, system: ActorSystem[_])
   }
 }
 
-// when using this consider reducing failure otherwise a high change of at least one grouped evenvelope causing an error
+// when using this consider reducing failure otherwise a high change of at least one grouped envelope causing an error
 // and no progress will be made
 class GroupedProjectionHandler(tag: String, system: ActorSystem[_])
     extends JdbcHandler[Seq[EventEnvelope[ConfigurablePersistentActor.Event]], HikariJdbcSession] {

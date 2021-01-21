@@ -23,8 +23,11 @@ import akka.cluster.sharding.typed.{ ClusterShardingSettings, ShardedDaemonProce
 import akka.cluster.typed.Cluster
 import akka.management.scaladsl.AkkaManagement
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
+import akka.persistence.jdbc.query.javadsl.JdbcReadJournal
+import akka.persistence.jdbc.testkit.scaladsl.SchemaUtils
 import akka.persistence.query.Offset
 import akka.projection.eventsourced.EventEnvelope
+import akka.projection.eventsourced.scaladsl.EventSourcedProvider
 import akka.projection.jdbc.scaladsl.JdbcProjection
 import akka.projection.scaladsl.SourceProvider
 import akka.projection.{ ProjectionBehavior, ProjectionId }
@@ -34,23 +37,30 @@ import scala.io.Source
 
 object Guardian {
 
-  def createProjectionFor(projectionIndex: Int, tagIndex: Int, factory: HikariJdbcSessionFactory)(
-      implicit system: ActorSystem[_]) = {
+  def createProjectionFor(
+      projectionIndex: Int,
+      tagIndex: Int,
+      factory: HikariJdbcSessionFactory,
+      journalPluginId: String)(implicit system: ActorSystem[_]) = {
+
     val tag = ConfigurablePersistentActor.tagFor(projectionIndex, tagIndex)
 
-    val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
-      FailingEventsByTagSourceProvider.eventsByTag[ConfigurablePersistentActor.Event](
-        system = system,
-        readJournalPluginId = CassandraReadJournal.Identifier,
-        tag = tag)
+    // FIXME put this back in
+//      val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
+//      FailingEventsByTagSourceProvider.eventsByTag[ConfigurablePersistentActor.Event](
+//        system = system,
+//        readJournalPluginId = journalPluginId,
+//        tag = tag)
 
+    val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
+      EventSourcedProvider
+        .eventsByTag[ConfigurablePersistentActor.Event](system, readJournalPluginId = journalPluginId, tag = tag)
     //    JdbcProjection.groupedWithin(
     //      projectionId = ProjectionId("test-projection-id", tag),
     //      sourceProvider,
     //      () => factory.newSession(),
     //      () => new GroupedProjectionHandler(tag, system)
     //    )
-
     JdbcProjection.exactlyOnce(
       projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
       sourceProvider,
@@ -81,6 +91,13 @@ object Guardian {
 
       val connection = dataSource.getConnection()
 
+      val journal = system.settings.config.getString("akka.persistence.journal.plugin") match {
+        case "akka.persistence.cassandra.journal" => Main.Cassandra
+        case "jdbc-journal"                       => Main.JDBC
+      }
+
+      SchemaUtils.createIfNotExists()
+
       try {
         connection.createStatement().execute(postgresSchema)
         connection.commit()
@@ -98,7 +115,7 @@ object Guardian {
 
       val httpPort = system.settings.config.getInt("test.http.port")
 
-      val server = new HttpServer(new TestRoutes(loadGeneration, dataSource).route, httpPort)
+      val server = new HttpServer(new TestRoutes(loadGeneration, dataSource, journal).route, httpPort)
       server.start()
 
       if (Cluster(system).selfMember.hasRole("read-model")) {
@@ -111,7 +128,7 @@ object Guardian {
           ShardedDaemonProcess(system).init(
             name = s"test-projection-${projection}",
             settings.parallelism,
-            n => ProjectionBehavior(createProjectionFor(projection, n, dbSessionFactory)),
+            n => ProjectionBehavior(createProjectionFor(projection, n, dbSessionFactory, journal.readJournal)),
             shardedDaemonProcessSettings,
             Some(ProjectionBehavior.Stop))
         }

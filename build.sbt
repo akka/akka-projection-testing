@@ -3,6 +3,7 @@ val AkkaPersistenceCassandraVersion = "1.0.4"
 val AkkaHttpVersion = "10.2.0"
 val AkkaProjectionVersion = "1.0.0"
 val AkkaManagementVersion = "1.0.9"
+val AkkaPersistenceJdbc = "4.0.0+57-17a7d41a" // will become 5.0
 
 lazy val `akka-projection-testing` = project
   .in(file("."))
@@ -18,6 +19,7 @@ lazy val `akka-projection-testing` = project
     licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
     scalacOptions in Compile ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     javacOptions in Compile ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
+    resolvers += Resolver.bintrayRepo("akka", "snapshots"),
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-cluster-sharding-typed" % AkkaVersion,
         "com.typesafe.akka" %% "akka-persistence-typed" % AkkaVersion,
@@ -25,6 +27,7 @@ lazy val `akka-projection-testing` = project
         "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
         "com.typesafe.akka" %% "akka-persistence-cassandra" % AkkaPersistenceCassandraVersion,
         "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % AkkaPersistenceCassandraVersion,
+        "com.lightbend.akka" %% "akka-persistence-jdbc" % AkkaPersistenceJdbc,
         "com.lightbend.akka" %% "akka-projection-eventsourced" % AkkaProjectionVersion,
         "com.lightbend.akka" %% "akka-projection-cassandra" % AkkaProjectionVersion,
         "com.lightbend.akka" %% "akka-projection-jdbc" % AkkaProjectionVersion,

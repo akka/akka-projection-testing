@@ -17,9 +17,21 @@
 package akka.projection.testing
 
 import akka.actor.typed.ActorSystem
+import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
+import akka.persistence.jdbc.query.javadsl.JdbcReadJournal
 import com.typesafe.config.{ Config, ConfigFactory }
 
 object Main {
+
+  sealed trait Journal {
+    def readJournal: String
+  }
+  case object Cassandra extends Journal {
+    override def readJournal: String = CassandraReadJournal.Identifier
+  }
+  case object JDBC extends Journal {
+    override def readJournal: String = JdbcReadJournal.Identifier
+  }
 
   def main(args: Array[String]): Unit = {
     args.headOption match {

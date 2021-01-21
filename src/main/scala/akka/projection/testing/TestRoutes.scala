@@ -22,6 +22,8 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.persistence.jdbc.testkit.scaladsl.SchemaUtils
+import akka.projection.testing.Main.Journal
 import akka.stream.alpakka.cassandra.scaladsl.CassandraSessionRegistry
 import akka.util.Timeout
 import javax.sql.DataSource
@@ -43,7 +45,7 @@ object TestRoutes {
   implicit val testResultFormat: RootJsonFormat[Response] = jsonFormat2(Response)
 }
 
-class TestRoutes(loadGeneration: ActorRef[LoadGeneration.RunTest], dataSource: DataSource)(
+class TestRoutes(loadGeneration: ActorRef[LoadGeneration.RunTest], dataSource: DataSource, journal: Journal)(
     implicit val system: ActorSystem[_]) {
 
   private val log = LoggerFactory.getLogger(classOf[TestRoutes])
@@ -85,22 +87,32 @@ class TestRoutes(loadGeneration: ActorRef[LoadGeneration.RunTest], dataSource: D
               implicit val timeout: Timeout = Timeout(60.seconds)
               import akka.actor.typed.scaladsl.AskPattern._
               val name = if (runTest.name.isBlank) s"test-${System.currentTimeMillis()}" else runTest.name
-              // this is too expensive as it starts events by tag queries for every persistence id
-              //        val preTestCleanup: Future[Done] = queries.currentPersistenceIds()
-              //          .log("cleanup")
-              //          .mapAsync(10)(pid => cleanup.deleteAll(pid, neverUsePersistenceIdAgain = true))
-              //          .run()
 
-              // not safe for a real app but we know we don't re-use any persistence ids
-
-              val session = CassandraSessionRegistry(system).sessionFor("akka.persistence.cassandra")
-
-              val truncates: Seq[Future[Done]] = List(
-                session.executeWrite(s"truncate akka_testing.tag_views"),
-                session.executeWrite(s"truncate akka_testing.tag_write_progress"),
-                session.executeWrite(s"truncate akka_testing.tag_scanning"),
-                session.executeWrite(s"truncate akka_testing.messages"),
-                session.executeWrite(s"truncate akka_testing.all_persistence_ids"))
+              val truncates = journal match {
+                case Main.Cassandra =>
+                  val session = CassandraSessionRegistry(system).sessionFor("akka.persistence.cassandra")
+                  List(
+                    session.executeWrite(s"truncate akka_testing.tag_views"),
+                    session.executeWrite(s"truncate akka_testing.tag_write_progress"),
+                    session.executeWrite(s"truncate akka_testing.tag_scanning"),
+                    session.executeWrite(s"truncate akka_testing.messages"),
+                    session.executeWrite(s"truncate akka_testing.all_persistence_ids"))
+                case Main.JDBC =>
+                  val truncate = Future {
+                    val connection = dataSource.getConnection
+                    val stmt = connection.createStatement()
+                    try {
+                      stmt.execute("TRUNCATE events")
+                      stmt.execute("TRUNCATE event_tag")
+                      stmt.execute("DELETE FROM event_journal CASCADE")
+                      connection.commit()
+                    } finally {
+                      stmt.close()
+                      connection.close()
+                    }
+                  }
+                  Seq(truncate)
+              }
 
               val test = for {
                 _ <- Future.sequence(truncates)
