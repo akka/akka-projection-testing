@@ -48,7 +48,6 @@ object ConfigurablePersistentActor {
 
   private final case class InternalPersist(
       totalEvents: Long,
-      eventNr: Long,
       testName: String,
       toPersist: String,
       replyTo: ActorRef[StatusReply[Done]])
@@ -65,16 +64,18 @@ object ConfigurablePersistentActor {
           command match {
             case PersistAndAck(totalEvents, toPersist, ack, testName) =>
               ctx.log.debug("persisting {} events", totalEvents)
-              ctx.self ! InternalPersist(totalEvents, 1, testName, toPersist, ack)
+              ctx.self ! InternalPersist(totalEvents, testName, toPersist, ack)
               Effect.none
-            case InternalPersist(totalEvents, eventNr, testName, toPersist, replyTo) =>
+            case InternalPersist(totalEvents, testName, toPersist, replyTo) =>
               if (state.eventsProcessed == totalEvents) {
                 ctx.log.debug("Finished persisting {} events. Replying to {}", totalEvents, replyTo)
                 replyTo ! StatusReply.ack()
                 Effect.none
               } else {
-                Effect.persist(Event(testName, payload = s"${toPersist}-${eventNr}")).thenRun { _ =>
-                  ctx.self ! InternalPersist(totalEvents, eventNr + 1, testName, toPersist, replyTo)
+                val msg = s"${toPersist}-${state.eventsProcessed}"
+                ctx.log.trace("persisting: {}", msg)
+                Effect.persist(Event(testName, payload = msg)).thenRun { _ =>
+                  ctx.self ! InternalPersist(totalEvents, testName, toPersist, replyTo)
                 }
               }
           },

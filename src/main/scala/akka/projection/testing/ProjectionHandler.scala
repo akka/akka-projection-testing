@@ -30,7 +30,7 @@ class ProjectionHandler(tag: String, projectionId: Int, system: ActorSystem[_])
   private var count = 0
 
   override def process(session: HikariJdbcSession, envelope: EventEnvelope[ConfigurablePersistentActor.Event]): Unit = {
-    log.info(
+    log.trace(
       "Event {} for tag {} sequence {} test {}",
       envelope.event.payload,
       tag,
