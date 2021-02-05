@@ -21,13 +21,11 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, PostStop }
 import akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess
 import akka.cluster.sharding.typed.{ ClusterShardingSettings, ShardedDaemonProcessSettings }
 import akka.cluster.typed.Cluster
+import akka.management.cluster.bootstrap.ClusterBootstrap
 import akka.management.scaladsl.AkkaManagement
-import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
-import akka.persistence.jdbc.query.javadsl.JdbcReadJournal
 import akka.persistence.jdbc.testkit.scaladsl.SchemaUtils
 import akka.persistence.query.Offset
 import akka.projection.eventsourced.EventEnvelope
-import akka.projection.eventsourced.scaladsl.EventSourcedProvider
 import akka.projection.jdbc.scaladsl.JdbcProjection
 import akka.projection.scaladsl.SourceProvider
 import akka.projection.{ ProjectionBehavior, ProjectionId }
@@ -63,15 +61,18 @@ object Guardian {
       () => new ProjectionHandler(tag, projectionIndex, system))
   }
 
-  def apply(): Behavior[String] = {
+  def apply(shouldBootstrap: Boolean = false): Behavior[String] = {
     Behaviors.setup[String] { context =>
       implicit val system: ActorSystem[_] = context.system
       AkkaManagement(system).start()
+      if (shouldBootstrap) {
+        ClusterBootstrap(system).start
+      }
       // TODO config
       val config = new HikariConfig
-      config.setJdbcUrl("jdbc:postgresql://127.0.0.1:5432/")
-      config.setUsername("docker")
-      config.setPassword("docker")
+      config.setJdbcUrl(system.settings.config.getString("jdbc-connection-settings.url"))
+      config.setUsername(system.settings.config.getString("jdbc-connection-settings.user"))
+      config.setPassword(system.settings.config.getString("jdbc-connection-settings.password"))
       config.setMaximumPoolSize(20)
       config.setAutoCommit(false)
       Class.forName("org.postgresql.Driver")

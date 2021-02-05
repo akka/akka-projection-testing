@@ -37,6 +37,7 @@ object Main {
     args.headOption match {
 
       case Some(portString) if portString.matches("""\d+""") =>
+        System.setProperty("config.resource", "local.conf")
         val port = portString.toInt
         val httpPort = ("80" + portString.takeRight(2)).toInt
         val prometheusPort = ("900" + portString.takeRight(1)).toInt
@@ -44,7 +45,8 @@ object Main {
         startNode(port, httpPort, prometheusPort, akkaManagementPort)
 
       case None =>
-        throw new IllegalArgumentException("port number required argument")
+        println("No port number provided. Using defaults. Assuming running in k8s")
+        ActorSystem[String](Guardian(shouldBootstrap = true), "test")
     }
   }
 

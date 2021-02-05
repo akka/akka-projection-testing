@@ -7,6 +7,7 @@ val AkkaPersistenceJdbc = "4.0.0+57-17a7d41a" // will become 5.0
 
 lazy val `akka-projection-testing` = project
   .in(file("."))
+  .enablePlugins(JavaAppPackaging, DockerPlugin)
   .settings(
     organization := "akka.projection.testing",
     version := "1.0",
@@ -23,6 +24,7 @@ lazy val `akka-projection-testing` = project
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-cluster-sharding-typed" % AkkaVersion,
         "com.typesafe.akka" %% "akka-persistence-typed" % AkkaVersion,
+        "com.typesafe.akka" %% "akka-discovery" % AkkaVersion,
         "com.typesafe.akka" %% "akka-persistence-query" % AkkaVersion,
         "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
         "com.typesafe.akka" %% "akka-persistence-cassandra" % AkkaPersistenceCassandraVersion,
@@ -33,6 +35,8 @@ lazy val `akka-projection-testing` = project
         "com.lightbend.akka" %% "akka-projection-jdbc" % AkkaProjectionVersion,
         "com.lightbend.akka.management" %% "akka-management" % AkkaManagementVersion,
         "com.lightbend.akka.management" %% "akka-management-cluster-http" % AkkaManagementVersion,
+        "com.lightbend.akka.management" %% "akka-management-cluster-bootstrap" % AkkaManagementVersion,
+        "com.lightbend.akka.discovery" %% "akka-discovery-kubernetes-api" % AkkaManagementVersion,
         "com.zaxxer" % "HikariCP" % "3.4.5",
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
@@ -59,6 +63,12 @@ lazy val `akka-projection-testing` = project
     testOptions in Test += Tests.Argument("-oDF"),
     logBuffered in Test := false)
   //  .enablePlugins(Cinnamon)
+  .settings(
+    dockerBaseImage := "adoptopenjdk:11-jre-hotspot",
+    // change for your AWS account
+    dockerUsername := None,
+    dockerUpdateLatest := true,
+    dockerRepository := Some("803424716218.dkr.ecr.us-east-2.amazonaws.com"))
   .configs(IntegrationTest)
 
 TaskKey[Unit]("verifyCodeFmt") := {

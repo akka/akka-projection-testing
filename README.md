@@ -82,6 +82,61 @@ This should only happen in when multiple nodes are writing events as delayed eve
 order.
 
 
+## Deployment to EKS/GKE
+
+The Akka platform operator can be used to deploy this application to EKS for testing. 
+
+### Deploying to a new cluster with terraform
+
+Configure you aws client `aws configure`
+
+```
+cd terraform
+terraform init
+terraform plan
+```
+
+Then to actually execute
+
+```
+terraform apply
+```
+
+This will create:
+
+- VPC
+- RDS instance
+- EKS cluster
+- Install the metrics server into the EKS cluster (requried by the operator)
+- Configure security groups to allow communication
+
+The outputs printed at the end of `terraform apply` give all the information needed to configure an Akka Microservice e.g. 
+
+```
+db_endpoint = "projection-testing.cgrtpi2lqrw8.us-east-2.rds.amazonaws.com:5432"
+ecr_repository = "803424716218.dkr.ecr.us-east-2.amazonaws.com/akka-projection-testing"
+```
+
+Update build.sbt with the ecr repo for your AWS account and publish with `sbt docker:push`
+
+Then follow instructions on (ommitting EKS setup / security group setup / metrics server) https://developer.lightbend.com/docs/akka-platform-guide/deployment/aws-install.html
+Or deploy the operator manually if you have access to it.
+
+Create the JDBC secret, putting in your db endpoint:
+
+```
+kubectl create secret generic projection-testing-jdbc-secret --from-literal=username=postgres --from-literal=password=postgres --from-literal=connectionUrl="jdbc:postgresql://kubectl create secret generic shopping-cart-service-jdbc-secret --from-literal=username=postgres --from-literal=password=tiger --from-literal=connectionUrl="jdbc:postgresql://shopping-cart.c46wxwryhegl.eu-central-1.rds.amazonaws.com:5432/postgres?reWriteBatchedInserts=true"
+:5432/postgres?reWriteBatchedInserts=true"
+
+```
+
+Deploy the CR!
+
+```
+kubectl apply -f kubernetes/akka-microservice.yaml
+```
+
+
 
 
 

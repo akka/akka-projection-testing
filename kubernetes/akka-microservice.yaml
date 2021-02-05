@@ -1,0 +1,22 @@
+apiVersion: akka.lightbend.com/v1
+kind: AkkaMicroservice
+metadata:
+  name: projection-testing
+spec:
+  replicas: 4
+  image: 803424716218.dkr.ecr.us-east-2.amazonaws.com/akka-projection-testing:latest
+  javaOptions: "-Xlog:gc"
+  imagePullPolicy: Always
+  resources:
+    limits:
+      memory: "2Gi"
+    requests:
+      memory: "2Gi"
+      cpu: "1"
+  jdbc:
+    credentialsSecret: projection-testing-jdbc-secret
+  roles:
+    - name: "read-model"
+      replicasRatio: 50
+    - name: "write-mode"
+      replicasRatio: 50
