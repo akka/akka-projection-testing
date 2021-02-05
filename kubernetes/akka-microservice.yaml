@@ -13,6 +13,8 @@ spec:
     requests:
       memory: "2Gi"
       cpu: "1"
+  httpPort: "8080"
+  grpcPort: "off"
   jdbc:
     credentialsSecret: projection-testing-jdbc-secret
   roles:
