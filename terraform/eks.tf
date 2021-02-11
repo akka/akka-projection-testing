@@ -4,7 +4,8 @@ module "eks" {
   cluster_version = "1.18"
   subnets         = module.vpc.private_subnets
 
-  tags = {
+
+ tags = {
     Environment = "projection-testing"
   }
 
@@ -18,7 +19,8 @@ module "eks" {
     {
       name                          = "worker-group-1"
       instance_type                 = "m5.xlarge"
-      asg_min_size =  5
+      asg_min_size =  8
+      asg_desired_capacity = 8
       asg_max_size = 10
       additional_security_group_ids = [aws_security_group.worker_group_mgmt_one.id]
     },

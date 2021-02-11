@@ -49,16 +49,16 @@ object Guardian {
         readJournalPluginId = journalPluginId,
         tag = tag)
 
-//    JdbcProjection.groupedWithin(
-//      projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
-//      sourceProvider,
-//      () => factory.newSession(),
-//      () => new GroupedProjectionHandler(tag, projectionIndex, system))
-    JdbcProjection.exactlyOnce(
+    JdbcProjection.groupedWithin(
       projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
       sourceProvider,
       () => factory.newSession(),
-      () => new ProjectionHandler(tag, projectionIndex, system))
+      () => new GroupedProjectionHandler(tag, projectionIndex, system))
+//    JdbcProjection.exactlyOnce(
+//      projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
+//      sourceProvider,
+//      () => factory.newSession(),
+//      () => new ProjectionHandler(tag, projectionIndex, system))
   }
 
   def apply(shouldBootstrap: Boolean = false): Behavior[String] = {
@@ -68,7 +68,6 @@ object Guardian {
       if (shouldBootstrap) {
         ClusterBootstrap(system).start
       }
-      // TODO config
       val config = new HikariConfig
       config.setJdbcUrl(system.settings.config.getString("jdbc-connection-settings.url"))
       config.setUsername(system.settings.config.getString("jdbc-connection-settings.user"))

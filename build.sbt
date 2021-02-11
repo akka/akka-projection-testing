@@ -68,7 +68,7 @@ lazy val `akka-projection-testing` = project
     // change for your AWS account
     dockerUsername := None,
     dockerUpdateLatest := true,
-    dockerRepository := Some("803424716218.dkr.ecr.us-east-2.amazonaws.com"))
+    dockerRepository := Some("803424716218.dkr.ecr.us-east-1.amazonaws.com"))
   .configs(IntegrationTest)
 
 TaskKey[Unit]("verifyCodeFmt") := {

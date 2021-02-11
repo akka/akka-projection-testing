@@ -38,18 +38,24 @@ object ConfigurablePersistentActor {
   final case class PersistAndAck(
       totalEvents: Long,
       toPersist: String,
+      bytesPerEvent: Int,
       replyTo: ActorRef[StatusReply[Done]],
       testName: String)
       extends Command
       with CborSerializable
 
-  final case class Event(testName: String, payload: String, timeCreated: Long = System.currentTimeMillis())
+  final case class Event(
+      testName: String,
+      payload: String,
+      data: Array[Byte],
+      timeCreated: Long = System.currentTimeMillis())
       extends CborSerializable
 
   private final case class InternalPersist(
       totalEvents: Long,
       testName: String,
       toPersist: String,
+      bytesPerEvent: Int,
       replyTo: ActorRef[StatusReply[Done]])
       extends Command
 
@@ -62,11 +68,11 @@ object ConfigurablePersistentActor {
         State(0),
         (state, command) =>
           command match {
-            case PersistAndAck(totalEvents, toPersist, ack, testName) =>
+            case PersistAndAck(totalEvents, toPersist, bytesPerEvent, ack, testName) =>
               ctx.log.debug("persisting {} events", totalEvents)
-              ctx.self ! InternalPersist(totalEvents, testName, toPersist, ack)
+              ctx.self ! InternalPersist(totalEvents, testName, toPersist, bytesPerEvent, ack)
               Effect.none
-            case InternalPersist(totalEvents, testName, toPersist, replyTo) =>
+            case InternalPersist(totalEvents, testName, toPersist, bytesPerEvent, replyTo) =>
               if (state.eventsProcessed == totalEvents) {
                 ctx.log.debug("Finished persisting {} events. Replying to {}", totalEvents, replyTo)
                 replyTo ! StatusReply.ack()
@@ -74,8 +80,8 @@ object ConfigurablePersistentActor {
               } else {
                 val msg = s"${toPersist}-${state.eventsProcessed}"
                 ctx.log.trace("persisting: {}", msg)
-                Effect.persist(Event(testName, payload = msg)).thenRun { _ =>
-                  ctx.self ! InternalPersist(totalEvents, testName, toPersist, replyTo)
+                Effect.persist(Event(testName, payload = msg, data = new Array(bytesPerEvent))).thenRun { _ =>
+                  ctx.self ! InternalPersist(totalEvents, testName, toPersist, bytesPerEvent, replyTo)
                 }
               }
           },

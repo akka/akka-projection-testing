@@ -37,11 +37,17 @@ import scala.util.{ Failure, Success }
 
 object TestRoutes {
 
-  case class RunTest(name: String, nrActors: Int, messagesPerActor: Int, concurrentActors: Int, timeout: Int)
+  case class RunTest(
+      name: String,
+      nrActors: Int,
+      messagesPerActor: Int,
+      bytesPerEvent: Int,
+      concurrentActors: Int,
+      timeout: Int)
 
   case class Response(testName: String, expectedMessages: Long)
 
-  implicit val runTestFormat: RootJsonFormat[RunTest] = jsonFormat5(RunTest)
+  implicit val runTestFormat: RootJsonFormat[RunTest] = jsonFormat6(RunTest)
   implicit val testResultFormat: RootJsonFormat[Response] = jsonFormat2(Response)
 }
 
@@ -87,16 +93,17 @@ class TestRoutes(loadGeneration: ActorRef[LoadGeneration.RunTest], dataSource: D
               implicit val timeout: Timeout = Timeout(60.seconds)
               import akka.actor.typed.scaladsl.AskPattern._
               val name = if (runTest.name.isBlank) s"test-${System.currentTimeMillis()}" else runTest.name
+              val keyspace = system.settings.config.getString("akka.persistence.cassandra.journal.keyspace")
 
-              val truncates = journal match {
+              val truncates: Seq[Future[Any]] = journal match {
                 case Main.Cassandra =>
                   val session = CassandraSessionRegistry(system).sessionFor("akka.persistence.cassandra")
                   List(
-                    session.executeWrite(s"truncate akka_testing.tag_views"),
-                    session.executeWrite(s"truncate akka_testing.tag_write_progress"),
-                    session.executeWrite(s"truncate akka_testing.tag_scanning"),
-                    session.executeWrite(s"truncate akka_testing.messages"),
-                    session.executeWrite(s"truncate akka_testing.all_persistence_ids"))
+                    session.executeWrite(s"truncate $keyspace.tag_views"),
+                    session.executeWrite(s"truncate $keyspace.tag_write_progress"),
+                    session.executeWrite(s"truncate $keyspace.tag_scanning"),
+                    session.executeWrite(s"truncate $keyspace.messages"),
+                    session.executeWrite(s"truncate $keyspace.all_persistence_ids"))
                 case Main.JDBC =>
                   val truncate = Future {
                     val connection = dataSource.getConnection
@@ -115,7 +122,9 @@ class TestRoutes(loadGeneration: ActorRef[LoadGeneration.RunTest], dataSource: D
               }
 
               val test = for {
-                _ <- Future.sequence(truncates)
+                _ <- Future.sequence(truncates).recover {
+                  case t if t.getMessage.contains("does not exist") => Done
+                }
                 result <- {
                   log.info("Finished cleanup. Starting load generation")
                   loadGeneration.ask(
@@ -124,6 +133,7 @@ class TestRoutes(loadGeneration: ActorRef[LoadGeneration.RunTest], dataSource: D
                         name,
                         runTest.nrActors,
                         runTest.messagesPerActor,
+                        runTest.bytesPerEvent,
                         replyTo,
                         runTest.concurrentActors,
                         runTest.timeout))

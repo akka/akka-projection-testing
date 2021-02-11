@@ -41,6 +41,7 @@ object LoadGeneration {
       name: String,
       actors: Int,
       eventsPerActor: Int,
+      bytesPerEvent: Int,
       reply: ActorRef[TestSummary],
       numberOfConcurrentActors: Int,
       timeout: Long)
@@ -78,13 +79,13 @@ object LoadTest {
       source: DataSource): Behavior[Command] = Behaviors.setup { ctx =>
     import akka.actor.typed.scaladsl.AskPattern._
     // asks are retried
-    implicit val timeout: Timeout = 1.seconds
+    implicit val timeout: Timeout = 1.seconds // the ask is for all events for an actor so this is likely to be large
     implicit val system: ActorSystem[Nothing] = ctx.system
     implicit val ec: ExecutionContextExecutor = system.executionContext
     implicit val scheduler: Scheduler = system.toClassic.scheduler
 
     Behaviors.receiveMessagePartial[Command] {
-      case Start(RunTest(name, actors, eventsPerActor, replyTo, numberOfConcurrentActors, t)) =>
+      case Start(RunTest(name, actors, eventsPerActor, bytesPerEvent, replyTo, numberOfConcurrentActors, t)) =>
         threadSafeLog.info("TestPhase: Starting load generation")
         val expected: Int = actors * eventsPerActor
         val total = expected * settings.nrProjections
@@ -101,18 +102,19 @@ object LoadTest {
                 shardRegion.ask[StatusReply[Done]] { replyTo =>
                   ShardingEnvelope(
                     pid,
-                    ConfigurablePersistentActor.PersistAndAck(eventsPerActor, s"actor-$id-message", replyTo, testName))
+                    ConfigurablePersistentActor
+                      .PersistAndAck(eventsPerActor, s"actor-$id-message", bytesPerEvent, replyTo, testName))
                 }
               },
-              20,
+              500, // this is retried quite quickly
               1.second,
-              30.seconds,
+              5.seconds,
               0.1)
 
             retried.transform {
               case s @ Success(_) => s
-              case Failure(_) =>
-                Failure(new RuntimeException(s"Load generation failed for persistence id ${pid}")) // this will be an ask timeout
+              case Failure(t) =>
+                Failure(new RuntimeException(s"Load generation failed for persistence id ${pid}", t)) // this will be an ask timeout
             }
           }
 
@@ -124,7 +126,12 @@ object LoadTest {
         Behaviors
           .receiveMessagePartial[Command] {
             case StartValidation() =>
-              ctx.log.info("TestPhase: Starting validation")
+              val finishTime = System.nanoTime()
+              val totalTime = finishTime - startTime
+              ctx.log.info(
+                "TestPhase: Starting validation. All writes acked in: {}. Rough rate {}",
+                akka.util.PrettyDuration.format(totalTime.nanos),
+                total / math.max(totalTime.nanos.toSeconds, 1))
               val validation = ctx.spawn(
                 TestValidation(testName, settings.nrProjections, expected, t.seconds, source),
                 s"TestValidation=$testName",
@@ -144,7 +151,7 @@ object LoadTest {
                 testName,
                 total,
                 akka.util.PrettyDuration.format(totalTime.nanos),
-                total / totalTime.nanos.toSeconds)
+                total / math.max(1, totalTime.nanos.toSeconds))
               Behaviors.stopped
           }
     }
