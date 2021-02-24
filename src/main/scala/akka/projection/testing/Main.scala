@@ -51,13 +51,20 @@ object Main {
   }
 
   def startNode(port: Int, httpPort: Int, prometheusPort: Int, akkaManagementPort: Int): ActorSystem[_] = {
-    ActorSystem[String](Guardian(), "test", config(port, httpPort, prometheusPort, akkaManagementPort))
+    ActorSystem[String](Guardian(), "test", localConfig(port, httpPort, prometheusPort, akkaManagementPort))
 
   }
 
-  def config(port: Int, httpPort: Int, prometheusPort: Int, akkaManagementPort: Int): Config = {
+  def localConfig(port: Int, httpPort: Int, prometheusPort: Int, akkaManagementPort: Int): Config = {
     println(s"using port $port http port $httpPort prometheus port $prometheusPort")
     ConfigFactory.parseString(s"""
+      akka.cluster {
+        seed-nodes = [
+          "akka://test@127.0.0.1:2551",
+          "akka://test@127.0.0.1:2552"
+        ]
+        roles = ["write-model", "read-model"]
+      }
       akka.remote.artery.canonical.port = $port
       test.http.port = $httpPort
       akka.management.http.port = $akkaManagementPort

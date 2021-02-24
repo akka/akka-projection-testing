@@ -39,7 +39,7 @@ the events can be retried meaning that even with failures to the messages table 
 
 ### journal cleanup
 
-before every test the `messages` and `tag_views` test are truncated. meaning when investigating failures the only messages in these tables
+Before every test the `messages` and `tag_views` test are truncated. Meaning when investigating failures the only messages in these tables
 are from that test.
 
 the projection table `events` is not cleaned between tests but the table is keyed by a unique test name. to see the events in that table:
@@ -88,7 +88,7 @@ the akka platform operator can be used to deploy this application to eks for tes
 
 ### deploying to a new cluster with terraform
 
-configure you aws client `aws configure`
+configure your aws client `aws configure`
 
 ```
 cd terraform
