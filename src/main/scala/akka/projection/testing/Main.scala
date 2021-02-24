@@ -66,6 +66,7 @@ object Main {
         roles = ["write-model", "read-model"]
       }
       akka.remote.artery.canonical.port = $port
+      akka.remote.artery.canonical.hostname = "127.0.0.1"
       test.http.port = $httpPort
       akka.management.http.port = $akkaManagementPort
       akka.management.http.hostname = "127.0.0.1"
