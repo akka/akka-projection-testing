@@ -27,7 +27,7 @@ class HttpServer(routes: Route, port: Int)(implicit system: ActorSystem[_]) {
   import system.executionContext
 
   def start(): Unit = {
-    Http().newServerAt("localhost", port).bind(routes).map(_.addToCoordinatedShutdown(3.seconds)).onComplete {
+    Http().newServerAt("0.0.0.0", port).bind(routes).map(_.addToCoordinatedShutdown(3.seconds)).onComplete {
       case Success(binding) =>
         val address = binding.localAddress
         system.log.info("Online at http://{}:{}/", address.getHostString, address.getPort)

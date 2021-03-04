@@ -21,8 +21,9 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, PostStop }
 import akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess
 import akka.cluster.sharding.typed.{ ClusterShardingSettings, ShardedDaemonProcessSettings }
 import akka.cluster.typed.Cluster
+import akka.management.cluster.bootstrap.ClusterBootstrap
 import akka.management.scaladsl.AkkaManagement
-import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
+import akka.persistence.jdbc.testkit.scaladsl.SchemaUtils
 import akka.persistence.query.Offset
 import akka.projection.eventsourced.EventEnvelope
 import akka.projection.jdbc.scaladsl.JdbcProjection
@@ -34,39 +35,43 @@ import scala.io.Source
 
 object Guardian {
 
-  def createProjectionFor(projectionIndex: Int, tagIndex: Int, factory: HikariJdbcSessionFactory)(
-      implicit system: ActorSystem[_]) = {
+  def createProjectionFor(
+      projectionIndex: Int,
+      tagIndex: Int,
+      factory: HikariJdbcSessionFactory,
+      journalPluginId: String)(implicit system: ActorSystem[_]) = {
+
     val tag = ConfigurablePersistentActor.tagFor(projectionIndex, tagIndex)
 
     val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
       FailingEventsByTagSourceProvider.eventsByTag[ConfigurablePersistentActor.Event](
         system = system,
-        readJournalPluginId = CassandraReadJournal.Identifier,
+        readJournalPluginId = journalPluginId,
         tag = tag)
 
-    //    JdbcProjection.groupedWithin(
-    //      projectionId = ProjectionId("test-projection-id", tag),
-    //      sourceProvider,
-    //      () => factory.newSession(),
-    //      () => new GroupedProjectionHandler(tag, system)
-    //    )
-
-    JdbcProjection.exactlyOnce(
+    JdbcProjection.groupedWithin(
       projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
       sourceProvider,
       () => factory.newSession(),
-      () => new ProjectionHandler(tag, projectionIndex, system))
+      () => new GroupedProjectionHandler(tag, projectionIndex, system))
+//    JdbcProjection.exactlyOnce(
+//      projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
+//      sourceProvider,
+//      () => factory.newSession(),
+//      () => new ProjectionHandler(tag, projectionIndex, system))
   }
 
-  def apply(): Behavior[String] = {
+  def apply(shouldBootstrap: Boolean = false): Behavior[String] = {
     Behaviors.setup[String] { context =>
       implicit val system: ActorSystem[_] = context.system
       AkkaManagement(system).start()
-      // TODO config
+      if (shouldBootstrap) {
+        ClusterBootstrap(system).start
+      }
       val config = new HikariConfig
-      config.setJdbcUrl("jdbc:postgresql://127.0.0.1:5432/")
-      config.setUsername("docker")
-      config.setPassword("docker")
+      config.setJdbcUrl(system.settings.config.getString("jdbc-connection-settings.url"))
+      config.setUsername(system.settings.config.getString("jdbc-connection-settings.user"))
+      config.setPassword(system.settings.config.getString("jdbc-connection-settings.password"))
       config.setMaximumPoolSize(20)
       config.setAutoCommit(false)
       Class.forName("org.postgresql.Driver")
@@ -80,6 +85,13 @@ object Guardian {
       val dbSessionFactory: HikariJdbcSessionFactory = new HikariJdbcSessionFactory(dataSource)
 
       val connection = dataSource.getConnection()
+
+      val journal = system.settings.config.getString("akka.persistence.journal.plugin") match {
+        case "akka.persistence.cassandra.journal" => Main.Cassandra
+        case "jdbc-journal"                       => Main.JDBC
+      }
+
+      SchemaUtils.createIfNotExists()
 
       try {
         connection.createStatement().execute(postgresSchema)
@@ -98,7 +110,7 @@ object Guardian {
 
       val httpPort = system.settings.config.getInt("test.http.port")
 
-      val server = new HttpServer(new TestRoutes(loadGeneration, dataSource).route, httpPort)
+      val server = new HttpServer(new TestRoutes(loadGeneration, dataSource, journal).route, httpPort)
       server.start()
 
       if (Cluster(system).selfMember.hasRole("read-model")) {
@@ -111,7 +123,7 @@ object Guardian {
           ShardedDaemonProcess(system).init(
             name = s"test-projection-${projection}",
             settings.parallelism,
-            n => ProjectionBehavior(createProjectionFor(projection, n, dbSessionFactory)),
+            n => ProjectionBehavior(createProjectionFor(projection, n, dbSessionFactory, journal.readJournal)),
             shardedDaemonProcessSettings,
             Some(ProjectionBehavior.Stop))
         }

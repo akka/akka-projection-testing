@@ -1,2 +1,6 @@
 *.log
 target
+terraform.tfstate*
+*hcl
+kubeconfig_projection-testing
+*.zip
