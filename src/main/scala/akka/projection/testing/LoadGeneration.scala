@@ -37,6 +37,8 @@ import scala.util.{ Failure, Success }
 
 object LoadGeneration {
 
+  sealed trait Command
+
   case class RunTest(
       name: String,
       actors: Int,
@@ -45,16 +47,26 @@ object LoadGeneration {
       reply: ActorRef[TestSummary],
       numberOfConcurrentActors: Int,
       timeout: Long)
+      extends Command
+
+  case class ActivateActors(name: String, actors: Int) extends Command
 
   case class TestSummary(name: String, expectedMessages: Long)
 
   def apply(
       settings: EventProcessorSettings,
       shardRegion: ActorRef[ShardingEnvelope[ConfigurablePersistentActor.Command]],
-      source: DataSource): Behavior[RunTest] = Behaviors.setup { ctx =>
-    Behaviors.receiveMessage[RunTest] { rt: RunTest =>
-      ctx.spawn(LoadTest(settings, rt.name, shardRegion, source), s"test-${rt.name}") ! Start(rt)
-      Behaviors.same
+      source: DataSource): Behavior[Command] = Behaviors.setup { ctx =>
+    Behaviors.receiveMessage[Command] {
+      case rt: RunTest =>
+        ctx.spawn(LoadTest(settings, rt.name, shardRegion, source), s"test-${rt.name}") ! Start(rt)
+        Behaviors.same
+      case ActivateActors(testName, actors) =>
+        (1 to actors).foreach { n =>
+          val pid = s"${testName}-$n"
+          shardRegion ! ShardingEnvelope(pid, ConfigurablePersistentActor.WakeUp(testName))
+        }
+        Behaviors.same
     }
   }
 

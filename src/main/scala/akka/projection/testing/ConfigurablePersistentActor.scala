@@ -35,6 +35,8 @@ object ConfigurablePersistentActor {
 
   trait Command
 
+  final case class WakeUp(testName: String) extends Command with CborSerializable
+
   final case class PersistAndAck(
       totalEvents: Long,
       toPersist: String,
@@ -84,6 +86,9 @@ object ConfigurablePersistentActor {
                   ctx.self ! InternalPersist(totalEvents, testName, toPersist, bytesPerEvent, replyTo)
                 }
               }
+            case WakeUp(testName) =>
+              ctx.log.debug("WakeUp {}", ctx.self.path.name)
+              Effect.none
           },
         (state, _) => state.copy(eventsProcessed = state.eventsProcessed + 1)).withTagger(event =>
         (0 until settings.nrProjections).map { projection =>

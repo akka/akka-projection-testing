@@ -105,7 +105,7 @@ object Guardian {
       val settings = EventProcessorSettings(system)
       val shardRegion = ConfigurablePersistentActor.init(settings, system)
 
-      val loadGeneration: ActorRef[LoadGeneration.RunTest] =
+      val loadGeneration: ActorRef[LoadGeneration.Command] =
         context.spawn(LoadGeneration(settings, shardRegion, dataSource), "load-generation")
 
       val httpPort = system.settings.config.getInt("test.http.port")
