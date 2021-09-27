@@ -1,9 +1,9 @@
-val AkkaVersion = "2.6.10"
-val AkkaPersistenceCassandraVersion = "1.0.4"
-val AkkaHttpVersion = "10.2.0"
-val AkkaProjectionVersion = "1.0.0"
-val AkkaManagementVersion = "1.0.9"
-val AkkaPersistenceJdbc = "4.0.0+57-17a7d41a" // will become 5.0
+val AkkaVersion = "2.6.16"
+val AkkaPersistenceCassandraVersion = "1.0.5"
+val AkkaHttpVersion = "10.2.6"
+val AkkaProjectionVersion = "1.2.2"
+val AkkaManagementVersion = "1.1.1"
+val AkkaPersistenceJdbc = "5.0.4"
 
 lazy val `akka-projection-testing` = project
   .in(file("."))
@@ -11,7 +11,7 @@ lazy val `akka-projection-testing` = project
   .settings(
     organization := "akka.projection.testing",
     version := "1.0",
-    scalaVersion := "2.13.3",
+    scalaVersion := "2.13.6",
     organization := "com.typesafe.akka",
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com/")),
@@ -20,7 +20,6 @@ lazy val `akka-projection-testing` = project
     licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
     scalacOptions in Compile ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     javacOptions in Compile ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
-    resolvers += Resolver.bintrayRepo("akka", "snapshots"),
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-cluster-sharding-typed" % AkkaVersion,
         "com.typesafe.akka" %% "akka-persistence-typed" % AkkaVersion,

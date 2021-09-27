@@ -7,19 +7,27 @@ provide exactly once delivery to the projection.
 
 ## Running a test
 
+Start the application:
+
 ```
-curl  -x post  -v --data '{"name":"","nractors":20000, "messagesperactor": 1, "concurrentactors": 20000, "timeout": 60000}' --header "content-type: application/json"
+ sbt "run 2551"
+```
+
+Start a test run:
+
+```
+curl -X POST --data '{"name":"","nrActors":1000, "messagesPerActor": 100, "concurrentActors": 100, "bytesPerEvent": 100, "timeout": 60000}' --header "content-type: application/json" http://127.0.0.1:8051/test
 ```
 
 the params are:
 
-* `nractors` how many persistent actors to create
-* `messagesperactor` how many messages per actor, the total number of messages will be `nractors * messagesperactor`
-* `concurrentactors` how many actors to have persisting events at the same time. set to the same as `nractors` to have them all created at once.
+* `nrActors` how many persistent actors to create
+* `messagesPerActor` how many messages per actor, the total number of messages will be `nractors * messagesperactor`
+* `concurrentActors` how many actors to have persisting events at the same time. set to the same as `nractors` to have them all created at once.
 * `timeout` how long to wait for all the messages to reach the projection in seconds
 
 the response gives back a test name and an expected event total.
-the expected event total is the `nractos` * `messagesperactor` * `${event-processor.nr-projections}`.
+the expected event total is the `nrActors` * `messagesPeractor` * `${event-processor.nr-projections}`.
 
 ```
 {"expectedmessages":200000,"testname":"test-1602762703160"}
@@ -44,7 +52,9 @@ are from that test.
 
 the projection table `events` is not cleaned between tests but the table is keyed by a unique test name. to see the events in that table:
 
-`select count(*) from events where name = 'test-1602761729929'`
+```
+select count(*) from events where name = 'test-1602761729929'
+```
 
 ## injecting failures
 
@@ -56,7 +66,7 @@ this can be changed with `test.projection-failure-every`
 ## setup
 
 * cassandra on port 9042
-* postgres on port 5432 with user and password docker/docker. not currently configurable see `guardian.scala`
+* postgres on port 5432 with user and password postgres/postgres. not currently configurable see `guardian.scala`
 
 ## starting multiple nodes
 
