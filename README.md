@@ -52,7 +52,9 @@ are from that test.
 
 the projection table `events` is not cleaned between tests but the table is keyed by a unique test name. to see the events in that table:
 
-`select count(*) from events where name = 'test-1602761729929'`
+```
+select count(*) from events where name = 'test-1602761729929'
+```
 
 ## injecting failures
 
@@ -64,7 +66,7 @@ this can be changed with `test.projection-failure-every`
 ## setup
 
 * cassandra on port 9042
-* postgres on port 5432 with user and password docker/docker. not currently configurable see `guardian.scala`
+* postgres on port 5432 with user and password postgres/postgres. not currently configurable see `guardian.scala`
 
 ## starting multiple nodes
 

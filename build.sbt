@@ -1,9 +1,9 @@
-val AkkaVersion = "2.6.10"
-val AkkaPersistenceCassandraVersion = "1.0.4"
-val AkkaHttpVersion = "10.2.0"
-val AkkaProjectionVersion = "1.0.0"
-val AkkaManagementVersion = "1.0.9"
-val AkkaPersistenceJdbc = "5.0.0" // will become 5.0
+val AkkaVersion = "2.6.16"
+val AkkaPersistenceCassandraVersion = "1.0.5"
+val AkkaHttpVersion = "10.2.6"
+val AkkaProjectionVersion = "1.2.2"
+val AkkaManagementVersion = "1.1.1"
+val AkkaPersistenceJdbc = "5.0.4"
 
 lazy val `akka-projection-testing` = project
   .in(file("."))
@@ -11,7 +11,7 @@ lazy val `akka-projection-testing` = project
   .settings(
     organization := "akka.projection.testing",
     version := "1.0",
-    scalaVersion := "2.13.3",
+    scalaVersion := "2.13.6",
     organization := "com.typesafe.akka",
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com/")),
