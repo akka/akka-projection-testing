@@ -18,19 +18,27 @@ package akka.projection.testing
 
 import akka.actor.typed.ActorSystem
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
-import akka.persistence.jdbc.query.javadsl.JdbcReadJournal
+import akka.persistence.jdbc.query.scaladsl.JdbcReadJournal
+import akka.persistence.r2dbc.query.scaladsl.R2dbcReadJournal
 import com.typesafe.config.{ Config, ConfigFactory }
 
 object Main {
 
   sealed trait Journal {
+    def journalPluginId: String
     def readJournal: String
   }
   case object Cassandra extends Journal {
+    override val journalPluginId: String = "akka.persistence.cassandra.journal"
     override def readJournal: String = CassandraReadJournal.Identifier
   }
   case object JDBC extends Journal {
+    override val journalPluginId: String = "jdbc-journal"
     override def readJournal: String = JdbcReadJournal.Identifier
+  }
+  case object R2DBC extends Journal {
+    override val journalPluginId: String = "akka.persistence.r2dbc.journal"
+    override def readJournal: String = R2dbcReadJournal.Identifier
   }
 
   def main(args: Array[String]): Unit = {
@@ -44,7 +52,7 @@ object Main {
         val akkaManagementPort = ("85" + portString.takeRight(2)).toInt
         startNode(port, httpPort, prometheusPort, akkaManagementPort)
 
-      case None =>
+      case _ =>
         println("No port number provided. Using defaults. Assuming running in k8s")
         ActorSystem[String](Guardian(shouldBootstrap = true), "test")
     }

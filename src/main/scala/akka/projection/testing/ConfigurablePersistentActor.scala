@@ -63,10 +63,10 @@ object ConfigurablePersistentActor {
 
   final case class State(eventsProcessed: Long) extends CborSerializable
 
-  def apply(settings: EventProcessorSettings, persistenceId: String): Behavior[Command] =
+  def apply(settings: EventProcessorSettings, entityId: String): Behavior[Command] =
     Behaviors.setup { ctx =>
       EventSourcedBehavior[Command, Event, State](
-        persistenceId = PersistenceId.ofUniqueId(persistenceId),
+        persistenceId = PersistenceId.of(Key.name, entityId),
         State(0),
         (state, command) =>
           command match {

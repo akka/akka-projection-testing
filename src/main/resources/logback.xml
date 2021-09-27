@@ -8,6 +8,7 @@
 
     <logger name="com.datastax.oss.driver" level="WARN"/>
     <logger name="com.codahale.metrics" level="INFO"/>
+    <logger name="akka.persistence.r2dbc" level="INFO" />
 
     <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
         <queueSize>8192</queueSize>

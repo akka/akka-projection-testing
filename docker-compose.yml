@@ -1,17 +1,17 @@
 version: '2'
 services:
-  cassandra:
-    image: cassandra:latest
-    container_name: apt_cassandra
-    ports:
-      - "9042:9042"
-
+#  cassandra:
+#    image: cassandra:latest
+#    container_name: apt_cassandra
+#    ports:
+#      - "9042:9042"
+#
   postgres:
     image: postgres:latest
     container_name: apt_postgres
     environment:
-      - "TZ=Europe/Amsterdam"
-      - "POSTGRES_USER=docker"
-      - "POSTGRES_PASSWORD=docker"
+      TZ: Europe/Amsterdam
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"  # credentials (docker:docker)
+      - "5432:5432"  # credentials (postgres:postgres)
