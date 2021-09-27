@@ -4,7 +4,7 @@ val AkkaHttpVersion = "10.2.6"
 val AkkaProjectionVersion = "1.2.2"
 val AkkaManagementVersion = "1.1.1"
 val AkkaPersistenceJdbc = "5.0.4"
-val AkkaPersistenceR2dbc = "0.0.0+12-181325c3-SNAPSHOT"
+val AkkaPersistenceR2dbc = "0.0.0+15-3e08146c-SNAPSHOT"
 
 lazy val `akka-projection-testing` = project
   .in(file("."))
