@@ -34,7 +34,9 @@ import scala.io.Source
 
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.scaladsl.EventsBySliceQuery
+import akka.projection.Projection
 import akka.projection.eventsourced.scaladsl.EventSourcedProvider2
+import akka.projection.r2dbc.scaladsl.R2dbcProjection
 
 object Guardian {
 
@@ -43,44 +45,51 @@ object Guardian {
       projectionIndex: Int,
       tagIndex: Int,
       factory: HikariJdbcSessionFactory,
-      journal: Main.Journal)(implicit system: ActorSystem[_]) = {
+      journal: Main.Journal)(
+      implicit system: ActorSystem[_]): Projection[EventEnvelope[ConfigurablePersistentActor.Event]] = {
 
     val tag = ConfigurablePersistentActor.tagFor(projectionIndex, tagIndex)
 
-    val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] = {
-      journal match {
-        case Main.Cassandra | Main.JDBC =>
+    journal match {
+      case Main.Cassandra | Main.JDBC =>
+        val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
           FailingEventsByTagSourceProvider.eventsByTag[ConfigurablePersistentActor.Event](
             system = system,
             readJournalPluginId = journal.readJournal,
             tag = tag)
-        case Main.R2DBC =>
-          // FIXME implement FailingEventsBySlicesSourceProvider
+        JdbcProjection.groupedWithin(
+          projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
+          sourceProvider,
+          () => factory.newSession(),
+          () => new GroupedProjectionHandler(tag, projectionIndex, system))
+      //    JdbcProjection.exactlyOnce(
+      //      projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
+      //      sourceProvider,
+      //      () => factory.newSession(),
+      //      () => new ProjectionHandler(tag, projectionIndex, system))
 
-          // FIXME there should be a more convenient API for the slice util methods
-          val eventsBySlicesQuery =
-            PersistenceQuery(system).readJournalFor[EventsBySliceQuery](journal.readJournal)
-          val ranges = eventsBySlicesQuery.sliceRanges(settings.parallelism)
+      case Main.R2DBC =>
+        // FIXME implement FailingEventsBySlicesSourceProvider
 
+        // FIXME there should be a more convenient API for the slice util methods
+        val eventsBySlicesQuery =
+          PersistenceQuery(system).readJournalFor[EventsBySliceQuery](journal.readJournal)
+        val ranges = eventsBySlicesQuery.sliceRanges(settings.parallelism)
+
+        val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
           EventSourcedProvider2.eventsBySlices[ConfigurablePersistentActor.Event](
             system = system,
             readJournalPluginId = journal.readJournal,
             entityTypeHint = ConfigurablePersistentActor.Key.name,
             minSlice = ranges(tagIndex).min,
             maxSlice = ranges(tagIndex).max)
-      }
-    }
 
-    JdbcProjection.groupedWithin(
-      projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
-      sourceProvider,
-      () => factory.newSession(),
-      () => new GroupedProjectionHandler(tag, projectionIndex, system))
-//    JdbcProjection.exactlyOnce(
-//      projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
-//      sourceProvider,
-//      () => factory.newSession(),
-//      () => new ProjectionHandler(tag, projectionIndex, system))
+        R2dbcProjection.groupedWithin(
+          projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
+          settings = None,
+          sourceProvider,
+          () => new R2dbcGroupedProjectionHandler(tag, projectionIndex)(system.executionContext))
+    }
   }
 
   def apply(shouldBootstrap: Boolean = false): Behavior[String] = {

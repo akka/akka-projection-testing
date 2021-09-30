@@ -75,11 +75,7 @@ object TestValidation {
             checksSinceChange = 0
           }
           previousResult = results
-          if (checksSinceChange >= 3 && results.forall(_ > expectedNrEvents - 100)) {
-            // FIXME some events are missing for R2DBC
-            ctx.log.warn("Missing events but stopping anyway.")
-            Pass
-          } else if (checksSinceChange > 20) { // no change for 40 seconds
+          if (checksSinceChange > 20) { // no change for 40 seconds
             NoChange
           } else {
             Fail

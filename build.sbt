@@ -4,7 +4,7 @@ val AkkaHttpVersion = "10.2.6"
 val AkkaProjectionVersion = "1.2.2"
 val AkkaManagementVersion = "1.1.1"
 val AkkaPersistenceJdbc = "5.0.4"
-val AkkaPersistenceR2dbc = "0.0.0+15-3e08146c-SNAPSHOT"
+val AkkaPersistenceR2dbc = "0.0.0+23-64030b3e-SNAPSHOT"
 
 lazy val `akka-projection-testing` = project
   .in(file("."))
@@ -31,6 +31,7 @@ lazy val `akka-projection-testing` = project
         "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % AkkaPersistenceCassandraVersion,
         "com.lightbend.akka" %% "akka-persistence-jdbc" % AkkaPersistenceJdbc,
         "com.lightbend.akka" %% "akka-persistence-r2dbc" % AkkaPersistenceR2dbc,
+        "com.lightbend.akka" %% "akka-projection-r2dbc" % AkkaPersistenceR2dbc,
         "com.lightbend.akka" %% "akka-projection-eventsourced" % AkkaProjectionVersion,
         "com.lightbend.akka" %% "akka-projection-cassandra" % AkkaProjectionVersion,
         "com.lightbend.akka" %% "akka-projection-jdbc" % AkkaProjectionVersion,
