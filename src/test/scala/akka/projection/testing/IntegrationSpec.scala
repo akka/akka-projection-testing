@@ -44,7 +44,7 @@ class IntegrationSpec
     with Matchers {
 
   override implicit val patienceConfig: PatienceConfig =
-    PatienceConfig(timeout = Span(25, Seconds), interval = Span(500, Milliseconds))
+    PatienceConfig(timeout = Span(120, Seconds), interval = Span(500, Milliseconds))
   implicit val testSystem: ActorSystem = ActorSystem()
   implicit val ec: ExecutionContextExecutor = testSystem.dispatcher
   private var systems: Set[ActorSystem] = Set(testSystem)
