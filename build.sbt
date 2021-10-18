@@ -1,10 +1,10 @@
 val AkkaVersion = "2.6.16"
 val AkkaPersistenceCassandraVersion = "1.0.5"
 val AkkaHttpVersion = "10.2.6"
-val AkkaProjectionVersion = "1.2.2"
+val AkkaProjectionVersion = "1.2.2+4-6602699f-SNAPSHOT"
 val AkkaManagementVersion = "1.1.1"
 val AkkaPersistenceJdbc = "5.0.4"
-val AkkaPersistenceR2dbc = "0.0.0+23-64030b3e-SNAPSHOT"
+val AkkaPersistenceR2dbc = "0.0.0+76-d24161c8-SNAPSHOT"
 
 lazy val `akka-projection-testing` = project
   .in(file("."))
@@ -21,6 +21,7 @@ lazy val `akka-projection-testing` = project
     licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
     scalacOptions in Compile ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     javacOptions in Compile ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
+    resolvers += Resolver.sonatypeRepo("snapshots"), // FIXME remove when using stable akka-projection
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-cluster-sharding-typed" % AkkaVersion,
         "com.typesafe.akka" %% "akka-persistence-typed" % AkkaVersion,
@@ -44,7 +45,7 @@ lazy val `akka-projection-testing` = project
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
         "ch.qos.logback" % "logback-classic" % "1.2.3",
-        "org.postgresql" % "postgresql" % "42.2.14",
+        "org.postgresql" % "postgresql" % "42.2.24",
         "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test,
         "com.typesafe.akka" %% "akka-persistence-testkit" % AkkaVersion % Test,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,

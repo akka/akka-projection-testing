@@ -32,8 +32,6 @@ import akka.projection.{ ProjectionBehavior, ProjectionId }
 import com.zaxxer.hikari.{ HikariConfig, HikariDataSource }
 import scala.io.Source
 
-import akka.persistence.query.PersistenceQuery
-import akka.persistence.query.scaladsl.EventsBySliceQuery
 import akka.projection.Projection
 import akka.projection.eventsourced.scaladsl.EventSourcedProvider2
 import akka.projection.r2dbc.scaladsl.R2dbcProjection
@@ -71,10 +69,7 @@ object Guardian {
       case Main.R2DBC =>
         // FIXME implement FailingEventsBySlicesSourceProvider
 
-        // FIXME there should be a more convenient API for the slice util methods
-        val eventsBySlicesQuery =
-          PersistenceQuery(system).readJournalFor[EventsBySliceQuery](journal.readJournal)
-        val ranges = eventsBySlicesQuery.sliceRanges(settings.parallelism)
+        val ranges = EventSourcedProvider2.sliceRanges(system, journal.readJournal, settings.parallelism)
 
         val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
           EventSourcedProvider2.eventsBySlices[ConfigurablePersistentActor.Event](
@@ -84,11 +79,17 @@ object Guardian {
             minSlice = ranges(tagIndex).min,
             maxSlice = ranges(tagIndex).max)
 
-        R2dbcProjection.groupedWithin(
+//        R2dbcProjection.groupedWithin(
+//          projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
+//          settings = None,
+//          sourceProvider,
+//          () => new R2dbcGroupedProjectionHandler(tag, projectionIndex)(system.executionContext))
+
+        R2dbcProjection.exactlyOnce(
           projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
           settings = None,
           sourceProvider,
-          () => new R2dbcGroupedProjectionHandler(tag, projectionIndex)(system.executionContext))
+          () => new R2dbcProjectionHandler(tag, projectionIndex)(system.executionContext))
     }
   }
 
