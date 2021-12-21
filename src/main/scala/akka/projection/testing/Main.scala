@@ -54,7 +54,7 @@ object Main {
 
       case _ =>
         println("No port number provided. Using defaults. Assuming running in k8s")
-        ActorSystem[String](Guardian(shouldBootstrap = true), "test")
+        ActorSystem[String](Guardian(shouldBootstrap = true), "appka")
     }
   }
 
@@ -71,7 +71,9 @@ object Main {
           "akka://test@127.0.0.1:2551",
           "akka://test@127.0.0.1:2552"
         ]
-        roles = ["write-model", "read-model"]
+        #roles = ["write-model", "read-model"]
+        roles = ["write-model"]
+        #roles = ["read-model"]
       }
       akka.remote.artery.canonical.port = $port
       akka.remote.artery.canonical.hostname = "127.0.0.1"

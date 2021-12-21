@@ -28,8 +28,9 @@ object EventProcessorSettings {
   def apply(config: Config): EventProcessorSettings = {
     val parallelism: Int = config.getInt("parallelism")
     val nrProjections: Int = config.getInt("nr-projections")
-    EventProcessorSettings(parallelism, nrProjections)
+    val readOny = config.getBoolean("read-only")
+    EventProcessorSettings(parallelism, nrProjections, readOny)
   }
 }
 
-final case class EventProcessorSettings(parallelism: Int, nrProjections: Int)
+final case class EventProcessorSettings(parallelism: Int, nrProjections: Int, readOnly: Boolean)

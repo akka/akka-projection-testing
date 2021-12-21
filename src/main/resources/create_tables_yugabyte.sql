@@ -1,9 +1,8 @@
-
 create table if not exists events (
     name varchar(256),
     projection_id BIGINT,
     event varchar(256),
-    constraint pkey primary key (name, projection_id, event)
+    primary key ((name, projection_id) HASH, event)
 );
 
 create table if not exists results (

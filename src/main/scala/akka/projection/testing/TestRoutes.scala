@@ -127,7 +127,7 @@ class TestRoutes(loadGeneration: ActorRef[LoadGeneration.Command], dataSource: D
                     val stmt = connection.createStatement()
                     try {
                       stmt.execute("TRUNCATE events")
-                      stmt.execute("DELETE FROM event_journal2 CASCADE")
+                      //stmt.execute("DELETE FROM event_journal CASCADE")
                       connection.commit()
                     } finally {
                       stmt.close()

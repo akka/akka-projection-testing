@@ -84,8 +84,12 @@ object TestValidation {
       }
       def writeResult(result: String): Unit = {
         val conn = source.getConnection()
-        conn.createStatement().execute(s"insert into results(name, result) values ('${testName}', '$result')")
-        conn.commit()
+        try {
+          conn.createStatement().execute(s"insert into results(name, result) values ('${testName}', '$result')")
+          conn.commit()
+        } finally {
+          conn.close()
+        }
       }
       Behaviors.withTimers { timers =>
         timers.startTimerAtFixedRate("test", 2.seconds)

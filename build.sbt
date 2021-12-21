@@ -1,17 +1,18 @@
-val AkkaVersion = "2.6.16"
+val AkkaVersion = "2.6.18"
 val AkkaPersistenceCassandraVersion = "1.0.5"
-val AkkaHttpVersion = "10.2.6"
-val AkkaProjectionVersion = "1.2.2+4-6602699f-SNAPSHOT"
+val AkkaHttpVersion = "10.2.7"
+val AkkaProjectionVersion = "1.2.3"
 val AkkaManagementVersion = "1.1.1"
 val AkkaPersistenceJdbc = "5.0.4"
-val AkkaPersistenceR2dbc = "0.0.0+76-d24161c8-SNAPSHOT"
+val AkkaPersistenceR2dbc = "0.4.0"
+
+ThisBuild / dynverSeparator := "-"
 
 lazy val `akka-projection-testing` = project
   .in(file("."))
   .enablePlugins(JavaAppPackaging, DockerPlugin)
   .settings(
     organization := "akka.projection.testing",
-    version := "1.0",
     scalaVersion := "2.13.6",
     organization := "com.typesafe.akka",
     organizationName := "Lightbend Inc.",
@@ -44,7 +45,7 @@ lazy val `akka-projection-testing` = project
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "ch.qos.logback" % "logback-classic" % "1.2.3",
+        "ch.qos.logback" % "logback-classic" % "1.2.9",
         "org.postgresql" % "postgresql" % "42.2.24",
         "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test,
         "com.typesafe.akka" %% "akka-persistence-testkit" % AkkaVersion % Test,
@@ -68,10 +69,11 @@ lazy val `akka-projection-testing` = project
   //  .enablePlugins(Cinnamon)
   .settings(
     dockerBaseImage := "adoptopenjdk:11-jre-hotspot",
+    dockerUsername := sys.props.get("docker.username"),
+    dockerRepository := sys.props.get("docker.registry"),
     // change for your AWS account
-    dockerUsername := None,
-    dockerUpdateLatest := true,
-    dockerRepository := Some("803424716218.dkr.ecr.us-east-1.amazonaws.com"))
+    //dockerRepository := Some("803424716218.dkr.ecr.us-east-1.amazonaws.com")
+    dockerUpdateLatest := true)
   .configs(IntegrationTest)
 
 TaskKey[Unit]("verifyCodeFmt") := {

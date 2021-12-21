@@ -16,6 +16,8 @@
 
 package akka.projection.testing
 
+import java.util.concurrent.ThreadLocalRandom
+
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
@@ -63,6 +65,14 @@ object ConfigurablePersistentActor {
 
   final case class State(eventsProcessed: Long) extends CborSerializable
 
+  def randomPayload(size: Int): Array[Byte] =
+    if (size == 0) Array.empty
+    else {
+      val payload = Array.ofDim[Byte](size)
+      ThreadLocalRandom.current().nextBytes(payload)
+      payload
+    }
+
   def apply(settings: EventProcessorSettings, entityId: String): Behavior[Command] =
     Behaviors.setup { ctx =>
       EventSourcedBehavior[Command, Event, State](
@@ -82,7 +92,8 @@ object ConfigurablePersistentActor {
               } else {
                 val msg = s"${toPersist}-${state.eventsProcessed}"
                 ctx.log.trace("persisting: {}", msg)
-                Effect.persist(Event(testName, payload = msg, data = new Array(bytesPerEvent))).thenRun { _ =>
+
+                Effect.persist(Event(testName, payload = msg, data = randomPayload(bytesPerEvent))).thenRun { _ =>
                   ctx.self ! InternalPersist(totalEvents, testName, toPersist, bytesPerEvent, replyTo)
                 }
               }
