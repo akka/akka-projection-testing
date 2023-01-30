@@ -154,16 +154,25 @@ object LoadTest {
             case StartValidation() =>
               val finishTime = System.nanoTime()
               val totalTime = finishTime - startTime
-              ctx.log.info(
-                "TestPhase: Starting validation. All writes acked in: {}. Rough rate {}",
-                akka.util.PrettyDuration.format(totalTime.nanos),
-                total / math.max(totalTime.nanos.toSeconds, 1))
-              val validation = ctx.spawn(
-                TestValidation(testName, settings.nrProjections, expected, t.seconds, source),
-                s"TestValidation=$testName",
-                DispatcherSelector.blocking())
-              ctx.watch(validation)
-              Behaviors.same
+              if (settings.readOnly) {
+                // no validation
+                ctx.log.info(
+                  "All writes acked in: {}. Rough rate {}",
+                  akka.util.PrettyDuration.format(totalTime.nanos),
+                  total / math.max(totalTime.nanos.toSeconds, 1))
+                Behaviors.stopped
+              } else {
+                ctx.log.info(
+                  "TestPhase: Starting validation. All writes acked in: {}. Rough rate {}",
+                  akka.util.PrettyDuration.format(totalTime.nanos),
+                  total / math.max(totalTime.nanos.toSeconds, 1))
+                val validation = ctx.spawn(
+                  TestValidation(testName, settings.nrProjections, expected, t.seconds, source),
+                  s"TestValidation=$testName",
+                  DispatcherSelector.blocking())
+                ctx.watch(validation)
+                Behaviors.same
+              }
             case LoadGenerationFailed(t) =>
               ctx.log.error("TestPhase: Load generation failed", t)
               Behaviors.stopped

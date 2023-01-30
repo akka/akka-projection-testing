@@ -49,6 +49,7 @@ lazy val `akka-projection-testing` = project
         //"ch.qos.logback" % "logback-classic" % "1.2.11",
         "ch.qos.logback" % "logback-classic" % "1.4.5", // for slf4j 2.0
         "org.postgresql" % "postgresql" % "42.2.24",
+        "org.hdrhistogram" % "HdrHistogram" % "2.1.12",
         "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test,
         "com.typesafe.akka" %% "akka-persistence-testkit" % AkkaVersion % Test,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
