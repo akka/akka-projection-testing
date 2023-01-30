@@ -23,7 +23,7 @@ import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.util.Try
 
-class ProjectionHandler(tag: String, projectionId: Int, system: ActorSystem[_])
+class ProjectionHandler(tag: String, projectionId: Int, system: ActorSystem[_], readOnly: Boolean)
     extends JdbcHandler[EventEnvelope[ConfigurablePersistentActor.Event], HikariJdbcSession] {
   private val log: Logger = LoggerFactory.getLogger(getClass)
   private var startTime = System.nanoTime()
@@ -43,21 +43,24 @@ class ProjectionHandler(tag: String, projectionId: Int, system: ActorSystem[_])
       count = 0
       startTime = System.nanoTime()
     }
-    session.withConnection { connection =>
-      require(!connection.getAutoCommit)
-      val pstmt = connection.prepareStatement("insert into events(name, projection_id, event) values (?, ?, ?)")
-      pstmt.setString(1, envelope.event.testName)
-      pstmt.setInt(2, projectionId)
-      pstmt.setString(3, envelope.event.payload)
-      pstmt.executeUpdate()
-      Try(pstmt.close())
+
+    if (!readOnly) {
+      session.withConnection { connection =>
+        require(!connection.getAutoCommit)
+        val pstmt = connection.prepareStatement("insert into events(name, projection_id, event) values (?, ?, ?)")
+        pstmt.setString(1, envelope.event.testName)
+        pstmt.setInt(2, projectionId)
+        pstmt.setString(3, envelope.event.payload)
+        pstmt.executeUpdate()
+        Try(pstmt.close())
+      }
     }
   }
 }
 
 // when using this consider reducing failure otherwise a high change of at least one grouped envelope causing an error
 // and no progress will be made
-class GroupedProjectionHandler(tag: String, projectionId: Int, system: ActorSystem[_])
+class GroupedProjectionHandler(tag: String, projectionId: Int, system: ActorSystem[_], readOnly: Boolean)
     extends JdbcHandler[Seq[EventEnvelope[ConfigurablePersistentActor.Event]], HikariJdbcSession] {
   private val log: Logger = LoggerFactory.getLogger(getClass)
 
@@ -69,12 +72,14 @@ class GroupedProjectionHandler(tag: String, projectionId: Int, system: ActorSyst
       envelopes.size,
       tag,
       envelopes.headOption.map(_.event.testName).getOrElse("<unknown>"))
-    session.withConnection { connection =>
-      require(!connection.getAutoCommit)
-      // TODO ps
-      val values = envelopes.map(e => s"('${e.event.testName}', '$projectionId', '${e.event.payload}')").mkString(",")
+    if (!readOnly) {
+      session.withConnection { connection =>
+        require(!connection.getAutoCommit)
+        // TODO ps
+        val values = envelopes.map(e => s"('${e.event.testName}', '$projectionId', '${e.event.payload}')").mkString(",")
 
-      connection.createStatement().execute(s"insert into events(name, projection_id, event) values $values")
+        connection.createStatement().execute(s"insert into events(name, projection_id, event) values $values")
+      }
     }
   }
 }

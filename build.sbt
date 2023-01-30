@@ -1,17 +1,19 @@
-val AkkaVersion = "2.6.16"
-val AkkaPersistenceCassandraVersion = "1.0.5"
-val AkkaHttpVersion = "10.2.6"
-val AkkaProjectionVersion = "1.2.2"
-val AkkaManagementVersion = "1.1.1"
-val AkkaPersistenceJdbc = "5.0.4"
+val AkkaVersion = "2.8.0-M4"
+val AkkaPersistenceCassandraVersion = "1.1.0"
+val AkkaHttpVersion = "10.5.0-M1"
+val AkkaProjectionVersion = "1.4.0-M1"
+val AkkaManagementVersion = "1.2.0"
+val AkkaPersistenceJdbc = "5.2.0"
+val AkkaPersistenceR2dbc = "1.1.0-M4"
+
+ThisBuild / dynverSeparator := "-"
 
 lazy val `akka-projection-testing` = project
   .in(file("."))
   .enablePlugins(JavaAppPackaging, DockerPlugin)
   .settings(
     organization := "akka.projection.testing",
-    version := "1.0",
-    scalaVersion := "2.13.6",
+    scalaVersion := "2.13.10",
     organization := "com.typesafe.akka",
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com/")),
@@ -29,6 +31,8 @@ lazy val `akka-projection-testing` = project
         "com.typesafe.akka" %% "akka-persistence-cassandra" % AkkaPersistenceCassandraVersion,
         "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % AkkaPersistenceCassandraVersion,
         "com.lightbend.akka" %% "akka-persistence-jdbc" % AkkaPersistenceJdbc,
+        "com.lightbend.akka" %% "akka-persistence-r2dbc" % AkkaPersistenceR2dbc,
+        "com.lightbend.akka" %% "akka-projection-r2dbc" % AkkaPersistenceR2dbc,
         "com.lightbend.akka" %% "akka-projection-eventsourced" % AkkaProjectionVersion,
         "com.lightbend.akka" %% "akka-projection-cassandra" % AkkaProjectionVersion,
         "com.lightbend.akka" %% "akka-projection-jdbc" % AkkaProjectionVersion,
@@ -40,13 +44,16 @@ lazy val `akka-projection-testing` = project
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "ch.qos.logback" % "logback-classic" % "1.2.3",
-        "org.postgresql" % "postgresql" % "42.2.14",
+        // FIXME strange, something brings in slf4j 2.0.0-alpha
+        "org.slf4j" % "slf4j-api" % "2.0.6",
+        //"ch.qos.logback" % "logback-classic" % "1.2.11",
+        "ch.qos.logback" % "logback-classic" % "1.4.5", // for slf4j 2.0
+        "org.postgresql" % "postgresql" % "42.2.24",
         "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test,
         "com.typesafe.akka" %% "akka-persistence-testkit" % AkkaVersion % Test,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
         "com.lightbend.akka" %% "akka-projection-testkit" % AkkaProjectionVersion % Test,
-        "org.scalatest" %% "scalatest" % "3.1.0" % Test,
+        "org.scalatest" %% "scalatest" % "3.2.7" % Test,
         "commons-io" % "commons-io" % "2.4" % Test
 //        Cinnamon.library.cinnamonPrometheus,
 //        Cinnamon.library.cinnamonPrometheusHttpServer,
@@ -54,6 +61,11 @@ lazy val `akka-projection-testing` = project
 //        Cinnamon.library.cinnamonAkkaPersistence
       ),
 //    cinnamon in run := true,
+    run / fork := true,
+    // pass along config selection to forked jvm
+    run / javaOptions ++= sys.props
+        .get("config.resource")
+        .fold(Seq.empty[String])(res => Seq(s"-Dconfig.resource=$res")),
     Global / cancelable := false, // ctrl-c
     mainClass in (Compile, run) := Some("akka.projection.testing.Main"),
     // disable parallel tests
@@ -63,11 +75,10 @@ lazy val `akka-projection-testing` = project
     logBuffered in Test := false)
   //  .enablePlugins(Cinnamon)
   .settings(
-    dockerBaseImage := "adoptopenjdk:11-jre-hotspot",
-    // change for your AWS account
-    dockerUsername := None,
-    dockerUpdateLatest := true,
-    dockerRepository := Some("803424716218.dkr.ecr.us-east-1.amazonaws.com"))
+    dockerBaseImage := "eclipse-temurin:17.0.3_7-jre-jammy",
+    dockerUsername := sys.props.get("docker.username"),
+    dockerRepository := sys.props.get("docker.registry"),
+    dockerUpdateLatest := true)
   .configs(IntegrationTest)
 
 TaskKey[Unit]("verifyCodeFmt") := {

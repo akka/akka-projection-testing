@@ -30,10 +30,11 @@ import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Milliseconds, Seconds, Span }
 import org.scalatest.wordspec.AnyWordSpec
-
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.Try
+
+import com.typesafe.config.ConfigFactory
 
 class IntegrationSpec
     extends AnyWordSpec
@@ -51,9 +52,10 @@ class IntegrationSpec
 
   "End to end test" should {
     "work" in {
-      systems += Main.startNode(2551, 8051, 9001, 8551).toClassic
+      val config = ConfigFactory.load("local.conf")
+      systems += Main.startNode(2551, 8051, 9001, 8551, config).toClassic
       validateAllMembersUp(8551, 1)
-      systems += Main.startNode(2552, 8052, 9002, 8552).toClassic
+      systems += Main.startNode(2552, 8052, 9002, 8552, config).toClassic
       validateAllMembersUp(8552, 2)
 
       val test = RunTest("", 100, 1, 1, 100, 10000)

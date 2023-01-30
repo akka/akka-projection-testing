@@ -16,6 +16,8 @@
 
 package akka.projection.testing
 
+import java.util.UUID
+
 import akka.actor.Scheduler
 import akka.pattern.retry
 import akka.actor.typed.scaladsl.Behaviors
@@ -30,10 +32,11 @@ import akka.util.Timeout
 import akka.{ Done, NotUsed }
 import javax.sql.DataSource
 import org.slf4j.{ Logger, LoggerFactory }
-
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.concurrent.duration.{ DurationInt, DurationLong }
 import scala.util.{ Failure, Success }
+
+import akka.stream.scaladsl.Flow
 
 object LoadGeneration {
 
@@ -96,6 +99,17 @@ object LoadTest {
     implicit val ec: ExecutionContextExecutor = system.executionContext
     implicit val scheduler: Scheduler = system.toClassic.scheduler
 
+    val throttlePerSecond =
+      system.settings.config.getString("test.throttle-actors-per-second").toLowerCase() match {
+        case "off" => None
+        case _     => Some(system.settings.config.getInt("test.throttle-actors-per-second"))
+      }
+
+    val throttleFlow = throttlePerSecond match {
+      case Some(t) => Flow[Int].throttle(t, 1.second)
+      case None    => Flow[Int]
+    }
+
     Behaviors.receiveMessagePartial[Command] {
       case Start(RunTest(name, actors, eventsPerActor, bytesPerEvent, replyTo, numberOfConcurrentActors, t)) =>
         threadSafeLog.info("TestPhase: Starting load generation")
@@ -106,16 +120,16 @@ object LoadTest {
 
         // The operation is idempotent so retries will not affect the final event count
         val testRun: Source[StatusReply[Done], NotUsed] =
-          Source(1 to actors).mapAsyncUnordered(numberOfConcurrentActors) { id =>
-            val pid = s"${testName}-$id"
+          Source(1 to actors).via(throttleFlow).mapAsyncUnordered(numberOfConcurrentActors) { n =>
+            val entityId = UUID.randomUUID().toString
             val retried: Future[StatusReply[Done]] = retry(
               () => {
-                threadSafeLog.debug("Sending message to pid {}", pid)
+                threadSafeLog.trace("Sending message to entity {}", entityId)
                 shardRegion.ask[StatusReply[Done]] { replyTo =>
                   ShardingEnvelope(
-                    pid,
+                    entityId,
                     ConfigurablePersistentActor
-                      .PersistAndAck(eventsPerActor, s"actor-$id-message", bytesPerEvent, replyTo, testName))
+                      .PersistAndAck(eventsPerActor, s"actor-$n-message", bytesPerEvent, replyTo, testName))
                 }
               },
               500, // this is retried quite quickly
@@ -126,7 +140,7 @@ object LoadTest {
             retried.transform {
               case s @ Success(_) => s
               case Failure(t) =>
-                Failure(new RuntimeException(s"Load generation failed for persistence id ${pid}", t)) // this will be an ask timeout
+                Failure(new RuntimeException(s"Load generation failed for entity id $entityId", t)) // this will be an ask timeout
             }
           }
 

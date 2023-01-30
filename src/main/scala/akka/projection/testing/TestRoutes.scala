@@ -121,6 +121,20 @@ class TestRoutes(loadGeneration: ActorRef[LoadGeneration.Command], dataSource: D
                     }
                   }
                   Seq(truncate)
+                case Main.R2DBC =>
+                  val truncate = Future {
+                    val connection = dataSource.getConnection
+                    val stmt = connection.createStatement()
+                    try {
+                      stmt.execute("TRUNCATE events")
+                      //stmt.execute("DELETE FROM event_journal CASCADE")
+                      connection.commit()
+                    } finally {
+                      stmt.close()
+                      connection.close()
+                    }
+                  }
+                  Seq(truncate)
               }
 
               val test = for {

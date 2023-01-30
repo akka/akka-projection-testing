@@ -5,7 +5,26 @@ This project tests event sourced actors events tagging events that are then read
 It is currently set up with Cassandra as the event sourcing event store and the projection using JDBC to 
 provide exactly once delivery to the projection.
 
-## Running a test
+## Running a test locally
+
+Start a local PostgresSQL server on default port 5432. Note that this is also needed when testing with Cassandra.
+
+```shell
+docker-compose -f docker/docker-compose-postgres.yml up -d
+```
+
+For testing with R2DBC you need to create the tables with:
+```shell
+docker exec -i postgres_db psql -U postgres -t < ddl-scripts/create_tables.sql
+```
+
+For testing with Cassandra start a local Cassandra with:
+
+```shell
+docker-compose -f docker/docker-compose-cassandra.yml up -d
+```
+
+Adjust the includes in `local.conf` to choose testing with Cassandra, R2DBC or JDBC.
 
 Start the application:
 
@@ -38,6 +57,12 @@ each projection gets its own tag for the same reason. a real production applicat
 
 the test checks that every message makes it into the projection. these are stored in the `events` table. duplicated 
 are detected with a primary key.
+
+To inspect the database:
+
+```
+docker exec -it docker-postgres-db-1 psql -U postgres
+```
 
 
 ### retries and idempotence
@@ -92,7 +117,9 @@ this should only happen in when multiple nodes are writing events as delayed eve
 order.
 
 
-## deployment to eks/gke
+## Deployment to eks/gke
+
+THIS SECTION MIGHT BE OUTDATED
 
 the akka platform operator can be used to deploy this application to eks for testing. 
 
@@ -120,33 +147,9 @@ this will create:
 - install the metrics server into the eks cluster (requried by the operator)
 - configure security groups to allow communication
 
-the outputs printed at the end of `terraform apply` give all the information needed to configure an akka microservice e.g. 
+the outputs printed at the end of `terraform apply` give all the information needed to configure the `kubernetes/deployment.yaml` 
 
 ```
 db_endpoint = "projection-testing.cgrtpi2lqrw8.us-east-2.rds.amazonaws.com:5432"
-ecr_repository = "803424716218.dkr.ecr.us-east-2.amazonaws.com/akka-projection-testing"
 ```
-
-update build.sbt with the ecr repo for your aws account and publish with `sbt docker:push`
-
-then follow instructions on (ommitting eks setup / security group setup / metrics server) https://developer.lightbend.com/docs/akka-platform-guide/deployment/aws-install.html
-or deploy the operator manually if you have access to it.
-
-create the jdbc secret, putting in your db endpoint:
-
-```
-kubectl create secret generic projection-testing-jdbc-secret --from-literal=username=postgres --from-literal=password=postgres --from-literal=connectionurl="jdbc:postgresql://kubectl create secret generic shopping-cart-service-jdbc-secret --from-literal=username=postgres --from-literal=password=tiger --from-literal=connectionurl="jdbc:postgresql://shopping-cart.c46wxwryhegl.eu-central-1.rds.amazonaws.com:5432/postgres?rewritebatchedinserts=true"
-:5432/postgres?rewritebatchedinserts=true"
-
-```
-
-deploy the cr!
-
-```
-kubectl apply -f kubernetes/akka-microservice.yaml
-```
-
-
-
-
 
