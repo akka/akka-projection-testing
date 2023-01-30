@@ -1,0 +1,12 @@
+version: '2.2'
+services:
+  cassandra:
+    image: cassandra:3
+    container_name: apt_cassandra
+    ports:
+      - "9042:9042"
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 5s
+      timeout: 5s
+      retries: 60

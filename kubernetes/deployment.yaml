@@ -55,6 +55,6 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: JAVA_TOOL_OPTIONS
-              value: "-XX:InitialRAMPercentage=75 -XX:MaxRAMPercentage=75 -Dakka.persistence.r2dbc.connection-factory.initial-size=20 -Dakka.persistence.r2dbc.connection-factory.max-size=40"
+              value: "-XX:InitialRAMPercentage=75 -XX:MaxRAMPercentage=75 -Dconfig.resource=r2dbc.conf -Dakka.persistence.r2dbc.connection-factory.initial-size=20 -Dakka.persistence.r2dbc.connection-factory.max-size=40"
             - name: REQUIRED_CONTACT_POINT_NR
               value: "3"

@@ -1,10 +1,10 @@
-val AkkaVersion = "2.6.18"
-val AkkaPersistenceCassandraVersion = "1.0.5"
-val AkkaHttpVersion = "10.2.7"
-val AkkaProjectionVersion = "1.2.3"
-val AkkaManagementVersion = "1.1.1"
-val AkkaPersistenceJdbc = "5.0.4"
-val AkkaPersistenceR2dbc = "0.4.0"
+val AkkaVersion = "2.8.0-M4"
+val AkkaPersistenceCassandraVersion = "1.1.0"
+val AkkaHttpVersion = "10.5.0-M1"
+val AkkaProjectionVersion = "1.4.0-M1"
+val AkkaManagementVersion = "1.2.0"
+val AkkaPersistenceJdbc = "5.2.0"
+val AkkaPersistenceR2dbc = "1.1.0-M4"
 
 ThisBuild / dynverSeparator := "-"
 
@@ -13,7 +13,7 @@ lazy val `akka-projection-testing` = project
   .enablePlugins(JavaAppPackaging, DockerPlugin)
   .settings(
     organization := "akka.projection.testing",
-    scalaVersion := "2.13.6",
+    scalaVersion := "2.13.10",
     organization := "com.typesafe.akka",
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com/")),
@@ -22,7 +22,6 @@ lazy val `akka-projection-testing` = project
     licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
     scalacOptions in Compile ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     javacOptions in Compile ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
-    resolvers += Resolver.sonatypeRepo("snapshots"), // FIXME remove when using stable akka-projection
     libraryDependencies ++= Seq(
         "com.typesafe.akka" %% "akka-cluster-sharding-typed" % AkkaVersion,
         "com.typesafe.akka" %% "akka-persistence-typed" % AkkaVersion,
@@ -45,13 +44,16 @@ lazy val `akka-projection-testing` = project
         "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
         "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-        "ch.qos.logback" % "logback-classic" % "1.2.9",
+        // FIXME strange, something brings in slf4j 2.0.0-alpha
+        "org.slf4j" % "slf4j-api" % "2.0.6",
+        //"ch.qos.logback" % "logback-classic" % "1.2.11",
+        "ch.qos.logback" % "logback-classic" % "1.4.5", // for slf4j 2.0
         "org.postgresql" % "postgresql" % "42.2.24",
         "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test,
         "com.typesafe.akka" %% "akka-persistence-testkit" % AkkaVersion % Test,
         "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
         "com.lightbend.akka" %% "akka-projection-testkit" % AkkaProjectionVersion % Test,
-        "org.scalatest" %% "scalatest" % "3.1.0" % Test,
+        "org.scalatest" %% "scalatest" % "3.2.7" % Test,
         "commons-io" % "commons-io" % "2.4" % Test
 //        Cinnamon.library.cinnamonPrometheus,
 //        Cinnamon.library.cinnamonPrometheusHttpServer,
@@ -59,6 +61,11 @@ lazy val `akka-projection-testing` = project
 //        Cinnamon.library.cinnamonAkkaPersistence
       ),
 //    cinnamon in run := true,
+    run / fork := true,
+    // pass along config selection to forked jvm
+    run / javaOptions ++= sys.props
+        .get("config.resource")
+        .fold(Seq.empty[String])(res => Seq(s"-Dconfig.resource=$res")),
     Global / cancelable := false, // ctrl-c
     mainClass in (Compile, run) := Some("akka.projection.testing.Main"),
     // disable parallel tests
@@ -68,11 +75,9 @@ lazy val `akka-projection-testing` = project
     logBuffered in Test := false)
   //  .enablePlugins(Cinnamon)
   .settings(
-    dockerBaseImage := "adoptopenjdk:11-jre-hotspot",
+    dockerBaseImage := "eclipse-temurin:17.0.3_7-jre-jammy",
     dockerUsername := sys.props.get("docker.username"),
     dockerRepository := sys.props.get("docker.registry"),
-    // change for your AWS account
-    //dockerRepository := Some("803424716218.dkr.ecr.us-east-1.amazonaws.com")
     dockerUpdateLatest := true)
   .configs(IntegrationTest)
 

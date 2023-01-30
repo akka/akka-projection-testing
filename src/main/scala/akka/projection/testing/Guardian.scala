@@ -31,6 +31,7 @@ import akka.projection.{ ProjectionBehavior, ProjectionId }
 import com.zaxxer.hikari.{ HikariConfig, HikariDataSource }
 import scala.io.Source
 
+import akka.projection.eventsourced.{ EventEnvelope => ProjectionEventEnvelope }
 import akka.persistence.query.typed.EventEnvelope
 import akka.projection.Projection
 import akka.projection.eventsourced.scaladsl.EventSourcedProvider
@@ -43,53 +44,55 @@ object Guardian {
       projectionIndex: Int,
       tagIndex: Int,
       factory: HikariJdbcSessionFactory,
-      journal: Main.Journal)(
-      implicit system: ActorSystem[_]): Projection[EventEnvelope[ConfigurablePersistentActor.Event]] = {
+      journal: Main.Journal)(implicit system: ActorSystem[_]): Behavior[ProjectionBehavior.Command] = {
 
     val tag = ConfigurablePersistentActor.tagFor(projectionIndex, tagIndex)
 
     journal match {
-//      case Main.Cassandra | Main.JDBC =>
-//        val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
-//          FailingEventsByTagSourceProvider.eventsByTag[ConfigurablePersistentActor.Event](
-//            system = system,
-//            readJournalPluginId = journal.readJournal,
-//            tag = tag)
-//        JdbcProjection.groupedWithin(
-//          projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
-//          sourceProvider,
-//          () => factory.newSession(),
-//          () => new GroupedProjectionHandler(tag, projectionIndex, system, settings.readOnly))
-      //    JdbcProjection.exactlyOnce(
-      //      projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
-      //      sourceProvider,
-      //      () => factory.newSession(),
-      //      () => new ProjectionHandler(tag, projectionIndex, system, settings.readOnly))
+      case Main.Cassandra | Main.JDBC =>
+        val sourceProvider: SourceProvider[Offset, ProjectionEventEnvelope[ConfigurablePersistentActor.Event]] =
+          FailingEventsByTagSourceProvider.eventsByTag[ConfigurablePersistentActor.Event](
+            system = system,
+            readJournalPluginId = journal.readJournal,
+            tag = tag)
+
+        val projection: Projection[ProjectionEventEnvelope[ConfigurablePersistentActor.Event]] =
+          JdbcProjection.groupedWithin(
+            projectionId = ProjectionId(s"test-projection-id-$projectionIndex", tag),
+            sourceProvider,
+            () => factory.newSession(),
+            () => new GroupedProjectionHandler(tag, projectionIndex, system, settings.readOnly))
+//          JdbcProjection.exactlyOnce(
+//            projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
+//            sourceProvider,
+//            () => factory.newSession(),
+//            () => new ProjectionHandler(tag, projectionIndex, system, settings.readOnly))
+        ProjectionBehavior(projection)
 
       case Main.R2DBC =>
-        // FIXME implement FailingEventsBySlicesSourceProvider
-
         val ranges = EventSourcedProvider.sliceRanges(system, journal.readJournal, settings.parallelism)
 
         val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
-          EventSourcedProvider.eventsBySlices[ConfigurablePersistentActor.Event](
+          FailingEventsBySlicesProvider.eventsBySlices[ConfigurablePersistentActor.Event](
             system = system,
             readJournalPluginId = journal.readJournal,
             entityType = ConfigurablePersistentActor.Key.name,
             minSlice = ranges(tagIndex).min,
             maxSlice = ranges(tagIndex).max)
 
-        R2dbcProjection.groupedWithin(
-          projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
-          settings = None,
-          sourceProvider,
-          () => new R2dbcGroupedProjectionHandler(tag, projectionIndex, settings.readOnly)(system.executionContext))
+        val projection: Projection[EventEnvelope[ConfigurablePersistentActor.Event]] =
+          R2dbcProjection.groupedWithin(
+            projectionId = ProjectionId(s"test-projection-id-$projectionIndex", tag),
+            settings = None,
+            sourceProvider,
+            () => new R2dbcGroupedProjectionHandler(tag, projectionIndex, settings.readOnly)(system.executionContext))
 
 //        R2dbcProjection.exactlyOnce(
 //          projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
 //          settings = None,
 //          sourceProvider,
 //          () => new R2dbcProjectionHandler(tag, projectionIndex, settings.readOnly)(system.executionContext))
+        ProjectionBehavior(projection)
     }
   }
 
@@ -100,6 +103,14 @@ object Guardian {
       if (shouldBootstrap) {
         ClusterBootstrap(system).start()
       }
+
+      val journal = system.settings.config.getString("akka.persistence.journal.plugin") match {
+        case Main.Cassandra.journalPluginId => Main.Cassandra
+        case Main.JDBC.journalPluginId      => Main.JDBC
+        case Main.R2DBC.journalPluginId     => Main.R2DBC
+        case other                          => throw new IllegalArgumentException(s"Unknown journal [$other]")
+      }
+
       val config = new HikariConfig
       config.setJdbcUrl(system.settings.config.getString("jdbc-connection-settings.url"))
       config.setUsername(system.settings.config.getString("jdbc-connection-settings.user"))
@@ -115,25 +126,18 @@ object Guardian {
 
       // Block until schema is created. Only one of these actors are created
       val dbSessionFactory: HikariJdbcSessionFactory = new HikariJdbcSessionFactory(dataSource)
-
-      val journal = system.settings.config.getString("akka.persistence.journal.plugin") match {
-        case Main.Cassandra.journalPluginId => Main.Cassandra
-        case Main.JDBC.journalPluginId      => Main.JDBC
-        case Main.R2DBC.journalPluginId     => Main.R2DBC
-        case other                          => throw new IllegalArgumentException(s"Unknown journal [$other]")
+      val connection = dataSource.getConnection()
+      try {
+        connection.createStatement().execute(postgresSchema)
+        connection.commit()
+      } catch {
+        case t: Throwable => context.log.error("Failed to create postgres schema. Assuming it already exists.", t)
+      } finally {
+        connection.close()
       }
 
-//      val connection = dataSource.getConnection()
-//      SchemaUtils.createIfNotExists()
-//
-//      try {
-//        connection.createStatement().execute(postgresSchema)
-//        connection.commit()
-//      } catch {
-//        case t: Throwable => context.log.error("Failed to create postgres schema. Assuming it already exists.", t)
-//      } finally {
-//        connection.close()
-//      }
+      if (journal == Main.JDBC)
+        SchemaUtils.createIfNotExists()
 
       val settings = EventProcessorSettings(system)
       val shardRegion = ConfigurablePersistentActor.init(settings, system)
@@ -152,11 +156,11 @@ object Guardian {
         val shardedDaemonProcessSettings =
           ShardedDaemonProcessSettings(system).withShardingSettings(shardingSettings.withRole("read-model"))
 
-        (0 until settings.nrProjections).foreach { projection =>
+        (0 until settings.nrProjections).foreach { projectionIndex =>
           ShardedDaemonProcess(system).init(
-            name = s"test-projection-${projection}",
+            name = s"test-projection-$projectionIndex",
             settings.parallelism,
-            n => ProjectionBehavior(createProjectionFor(settings, projection, n, dbSessionFactory, journal)),
+            n => createProjectionFor(settings, projectionIndex, n, dbSessionFactory, journal),
             shardedDaemonProcessSettings,
             Some(ProjectionBehavior.Stop))
         }

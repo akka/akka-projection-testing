@@ -18,9 +18,9 @@ package akka.projection.testing
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+
 import akka.NotUsed
 import akka.actor.typed.ActorSystem
-import akka.annotation.ApiMayChange
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Offset
 import akka.persistence.query.PersistenceQuery
@@ -28,11 +28,11 @@ import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.projection.eventsourced.EventEnvelope
 import akka.projection.scaladsl.SourceProvider
 import akka.stream.scaladsl.Source
-
 import scala.util.Random
 import scala.util.control.NoStackTrace
 
-@ApiMayChange
+import akka.projection.eventsourced.scaladsl.EventSourcedProvider
+
 object FailingEventsByTagSourceProvider {
 
   def eventsByTag[Event](
@@ -40,24 +40,25 @@ object FailingEventsByTagSourceProvider {
       readJournalPluginId: String,
       tag: String): SourceProvider[Offset, EventEnvelope[Event]] = {
 
-    val eventsByTagQuery =
-      PersistenceQuery(system).readJournalFor[EventsByTagQuery](readJournalPluginId)
-
-    new FailingEventsByTagSourceProvider(eventsByTagQuery, tag, system)
+    system.settings.config.getString("test.projection-failure-every").toLowerCase() match {
+      case "off" =>
+        // use the ordinary from Akka Projections
+        EventSourcedProvider.eventsByTag(system, readJournalPluginId, tag)
+      case _ =>
+        val failEvery = system.settings.config.getInt("test.projection-failure-every")
+        val eventsByTagQuery =
+          PersistenceQuery(system).readJournalFor[EventsByTagQuery](readJournalPluginId)
+        new FailingEventsByTagSourceProvider(failEvery, eventsByTagQuery, tag, system)
+    }
   }
 
   private class FailingEventsByTagSourceProvider[Event](
+      failEvery: Int,
       eventsByTagQuery: EventsByTagQuery,
       tag: String,
       system: ActorSystem[_])
       extends SourceProvider[Offset, EventEnvelope[Event]] {
     implicit val executionContext: ExecutionContext = system.executionContext
-    private val failEvery = {
-      system.settings.config.getString("test.projection-failure-every").toLowerCase() match {
-        case "off" => Int.MaxValue
-        case _     => system.settings.config.getInt("test.projection-failure-every")
-      }
-    }
 
     override def source(offset: () => Future[Option[Offset]]): Future[Source[EventEnvelope[Event], NotUsed]] =
       offset().map { offsetOpt =>
