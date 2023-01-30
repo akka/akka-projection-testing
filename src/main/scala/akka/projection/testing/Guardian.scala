@@ -42,56 +42,78 @@ object Guardian {
   def createProjectionFor(
       settings: EventProcessorSettings,
       projectionIndex: Int,
-      tagIndex: Int,
+      tagIndexOrSliceIndex: Int,
       factory: HikariJdbcSessionFactory,
       journal: Main.Journal)(implicit system: ActorSystem[_]): Behavior[ProjectionBehavior.Command] = {
 
-    val tag = ConfigurablePersistentActor.tagFor(projectionIndex, tagIndex)
-
     journal match {
       case Main.Cassandra | Main.JDBC =>
+        val tag = ConfigurablePersistentActor.tagFor(projectionIndex, tagIndexOrSliceIndex)
         val sourceProvider: SourceProvider[Offset, ProjectionEventEnvelope[ConfigurablePersistentActor.Event]] =
           FailingEventsByTagSourceProvider.eventsByTag[ConfigurablePersistentActor.Event](
             system = system,
             readJournalPluginId = journal.readJournal,
             tag = tag)
 
-        val projection: Projection[ProjectionEventEnvelope[ConfigurablePersistentActor.Event]] =
-          JdbcProjection.groupedWithin(
-            projectionId = ProjectionId(s"test-projection-id-$projectionIndex", tag),
-            sourceProvider,
-            () => factory.newSession(),
-            () => new GroupedProjectionHandler(tag, projectionIndex, system, settings.readOnly))
-//          JdbcProjection.exactlyOnce(
-//            projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
-//            sourceProvider,
-//            () => factory.newSession(),
-//            () => new ProjectionHandler(tag, projectionIndex, system, settings.readOnly))
+        val projection: Projection[ProjectionEventEnvelope[ConfigurablePersistentActor.Event]] = {
+          val projectionId = ProjectionId(s"test-projection-id-$projectionIndex", tag)
+          if (settings.readOnly) {
+            JdbcProjection.atLeastOnceAsync(
+              projectionId,
+              sourceProvider,
+              () => factory.newSession(),
+              () => new LoggingHandler(projectionId))
+          } else {
+            JdbcProjection.groupedWithin(
+              projectionId,
+              sourceProvider,
+              () => factory.newSession(),
+              () => new GroupedProjectionHandler(projectionId, projectionIndex, system, settings.readOnly))
+          }
+          //          JdbcProjection.exactlyOnce(
+          //            projectionId,
+          //            sourceProvider,
+          //            () => factory.newSession(),
+          //            () => new ProjectionHandler(projectionId, projectionIndex, system, settings.readOnly))
+        }
         ProjectionBehavior(projection)
 
       case Main.R2DBC =>
         val ranges = EventSourcedProvider.sliceRanges(system, journal.readJournal, settings.parallelism)
+        val sliceRange = ranges(tagIndexOrSliceIndex)
 
         val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
           FailingEventsBySlicesProvider.eventsBySlices[ConfigurablePersistentActor.Event](
             system = system,
             readJournalPluginId = journal.readJournal,
             entityType = ConfigurablePersistentActor.Key.name,
-            minSlice = ranges(tagIndex).min,
-            maxSlice = ranges(tagIndex).max)
+            minSlice = sliceRange.min,
+            maxSlice = sliceRange.max)
 
-        val projection: Projection[EventEnvelope[ConfigurablePersistentActor.Event]] =
-          R2dbcProjection.groupedWithin(
-            projectionId = ProjectionId(s"test-projection-id-$projectionIndex", tag),
-            settings = None,
-            sourceProvider,
-            () => new R2dbcGroupedProjectionHandler(tag, projectionIndex, settings.readOnly)(system.executionContext))
-
-//        R2dbcProjection.exactlyOnce(
-//          projectionId = ProjectionId(s"test-projection-id-${projectionIndex}", tag),
-//          settings = None,
-//          sourceProvider,
-//          () => new R2dbcProjectionHandler(tag, projectionIndex, settings.readOnly)(system.executionContext))
+        val projection: Projection[EventEnvelope[ConfigurablePersistentActor.Event]] = {
+          val projectionId =
+            ProjectionId(s"test-projection-id-$projectionIndex", s"${sliceRange.min}-${sliceRange.max}")
+          if (settings.readOnly) {
+            R2dbcProjection.atLeastOnceAsync(
+              projectionId,
+              settings = None,
+              sourceProvider,
+              () => new LoggingHandler(projectionId))
+          } else {
+            R2dbcProjection.groupedWithin(
+              projectionId,
+              settings = None,
+              sourceProvider,
+              () =>
+                new R2dbcGroupedProjectionHandler(projectionId, projectionIndex, settings.readOnly)(
+                  system.executionContext))
+          }
+          //        R2dbcProjection.exactlyOnce(
+          //          projectionId,
+          //          settings = None,
+          //          sourceProvider,
+          //          () => new R2dbcProjectionHandler(projectionId, projectionIndex, settings.readOnly)(system.executionContext))
+        }
         ProjectionBehavior(projection)
     }
   }

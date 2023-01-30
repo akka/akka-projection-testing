@@ -81,6 +81,16 @@ the projection table `events` is not cleaned between tests but the table is keye
 select count(*) from events where name = 'test-1602761729929'
 ```
 
+## performance test
+
+To test performance, rather than validation of projection correctness you can set config:
+
+```
+event-processor.read-only = on
+```
+
+Note that you can test write throughput by only starting nodes with Akka Cluster role "write-model".
+
 ## injecting failures
 
 the projection will fail roughly 2% of the messages resulting in the projection being restarted from the last saved offset.
