@@ -16,15 +16,23 @@
 
 package akka.projection.testing
 
+import scala.util.Random
+
 import akka.actor.typed.ActorSystem
 import akka.projection.eventsourced.EventEnvelope
 import akka.projection.jdbc.scaladsl.JdbcHandler
 import org.slf4j.{ Logger, LoggerFactory }
 import scala.util.Try
+import scala.util.control.NoStackTrace
 
 import akka.projection.ProjectionId
 
-class ProjectionHandler(projectionId: ProjectionId, projectionIndex: Int, system: ActorSystem[_], readOnly: Boolean)
+class ProjectionHandler(
+    projectionId: ProjectionId,
+    projectionIndex: Int,
+    system: ActorSystem[_],
+    readOnly: Boolean,
+    failEvery: Int)
     extends JdbcHandler[EventEnvelope[ConfigurablePersistentActor.Event], HikariJdbcSession] {
   private val log: Logger = LoggerFactory.getLogger(getClass)
   private var startTime = System.nanoTime()
@@ -37,6 +45,13 @@ class ProjectionHandler(projectionId: ProjectionId, projectionIndex: Int, system
       projectionId.id,
       envelope.offset,
       envelope.event.testName)
+
+    if (failEvery != Int.MaxValue && Random.nextInt(failEvery) == 1) {
+      throw new RuntimeException(
+        s"Simulated failure when processing persistence id ${envelope.persistenceId} sequence nr ${envelope.sequenceNr} offset ${envelope.offset}")
+        with NoStackTrace
+    }
+
     count += 1
     if (count == 1000) {
       val durationMs = (System.nanoTime() - startTime) / 1000 / 1000
@@ -69,7 +84,8 @@ class GroupedProjectionHandler(
     projectionId: ProjectionId,
     projectionIndex: Int,
     system: ActorSystem[_],
-    readOnly: Boolean)
+    readOnly: Boolean,
+    failEvery: Int)
     extends JdbcHandler[Seq[EventEnvelope[ConfigurablePersistentActor.Event]], HikariJdbcSession] {
   private val log: Logger = LoggerFactory.getLogger(getClass)
 
@@ -81,6 +97,15 @@ class GroupedProjectionHandler(
       envelopes.size,
       projectionId.id,
       envelopes.headOption.map(_.event.testName).getOrElse("<unknown>"))
+
+    envelopes.foreach { envelope =>
+      if (failEvery != Int.MaxValue && Random.nextInt(failEvery) == 1) {
+        throw new RuntimeException(
+          s"Simulated failure when processing persistence id ${envelope.persistenceId} sequence nr ${envelope.sequenceNr} offset ${envelope.offset}")
+          with NoStackTrace
+      }
+    }
+
     if (!readOnly) {
       session.withConnection { connection =>
         require(!connection.getAutoCommit)

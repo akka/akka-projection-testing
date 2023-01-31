@@ -50,10 +50,7 @@ object Guardian {
       case Main.Cassandra | Main.JDBC =>
         val tag = ConfigurablePersistentActor.tagFor(projectionIndex, tagIndexOrSliceIndex)
         val sourceProvider: SourceProvider[Offset, ProjectionEventEnvelope[ConfigurablePersistentActor.Event]] =
-          FailingEventsByTagSourceProvider.eventsByTag[ConfigurablePersistentActor.Event](
-            system = system,
-            readJournalPluginId = journal.readJournal,
-            tag = tag)
+          EventSourcedProvider.eventsByTag(system, journal.readJournal, tag)
 
         val projection: Projection[ProjectionEventEnvelope[ConfigurablePersistentActor.Event]] = {
           val projectionId = ProjectionId(s"test-projection-id-$projectionIndex", tag)
@@ -68,13 +65,19 @@ object Guardian {
               projectionId,
               sourceProvider,
               () => factory.newSession(),
-              () => new GroupedProjectionHandler(projectionId, projectionIndex, system, settings.readOnly))
+              () =>
+                new GroupedProjectionHandler(
+                  projectionId,
+                  projectionIndex,
+                  system,
+                  settings.readOnly,
+                  settings.failEvery))
           }
           //          JdbcProjection.exactlyOnce(
           //            projectionId,
           //            sourceProvider,
           //            () => factory.newSession(),
-          //            () => new ProjectionHandler(projectionId, projectionIndex, system, settings.readOnly))
+          //            () => new ProjectionHandler(projectionId, projectionIndex, system, settings.readOnly, settings.failEvery))
         }
         ProjectionBehavior(projection)
 
@@ -83,12 +86,12 @@ object Guardian {
         val sliceRange = ranges(tagIndexOrSliceIndex)
 
         val sourceProvider: SourceProvider[Offset, EventEnvelope[ConfigurablePersistentActor.Event]] =
-          FailingEventsBySlicesProvider.eventsBySlices[ConfigurablePersistentActor.Event](
-            system = system,
-            readJournalPluginId = journal.readJournal,
-            entityType = ConfigurablePersistentActor.Key.name,
-            minSlice = sliceRange.min,
-            maxSlice = sliceRange.max)
+          EventSourcedProvider.eventsBySlices(
+            system,
+            journal.readJournal,
+            ConfigurablePersistentActor.Key.name,
+            sliceRange.min,
+            sliceRange.max)
 
         val projection: Projection[EventEnvelope[ConfigurablePersistentActor.Event]] = {
           val projectionId =
@@ -105,14 +108,15 @@ object Guardian {
               settings = None,
               sourceProvider,
               () =>
-                new R2dbcGroupedProjectionHandler(projectionId, projectionIndex, settings.readOnly)(
+                new R2dbcGroupedProjectionHandler(projectionId, projectionIndex, settings.readOnly, settings.failEvery)(
                   system.executionContext))
+
+//            R2dbcProjection.exactlyOnce(
+//              projectionId,
+//              settings = None,
+//              sourceProvider,
+//              () => new R2dbcProjectionHandler(projectionId, projectionIndex, settings.readOnly, settings.failEvery)(system.executionContext))
           }
-          //        R2dbcProjection.exactlyOnce(
-          //          projectionId,
-          //          settings = None,
-          //          sourceProvider,
-          //          () => new R2dbcProjectionHandler(projectionId, projectionIndex, settings.readOnly)(system.executionContext))
         }
         ProjectionBehavior(projection)
     }

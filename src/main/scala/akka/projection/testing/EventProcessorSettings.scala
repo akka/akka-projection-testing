@@ -29,8 +29,12 @@ object EventProcessorSettings {
     val parallelism: Int = config.getInt("parallelism")
     val nrProjections: Int = config.getInt("nr-projections")
     val readOny = config.getBoolean("read-only")
-    EventProcessorSettings(parallelism, nrProjections, readOny)
+    val failEvery = config.getString("projection-failure-every").toLowerCase() match {
+      case "off" => Int.MaxValue
+      case _     => config.getInt("projection-failure-every")
+    }
+    EventProcessorSettings(parallelism, nrProjections, readOny, failEvery)
   }
 }
 
-final case class EventProcessorSettings(parallelism: Int, nrProjections: Int, readOnly: Boolean)
+final case class EventProcessorSettings(parallelism: Int, nrProjections: Int, readOnly: Boolean, failEvery: Int)

@@ -102,7 +102,7 @@ This helps tests the "exactly once" in the event of failures.
 This be enabled with:
 
 ```
-test.projection-failure-every = 100
+event-processor.projection-failure-every = 100
 ```
 
 ## setup

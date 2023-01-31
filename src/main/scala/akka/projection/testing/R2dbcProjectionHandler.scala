@@ -18,6 +18,8 @@ package akka.projection.testing
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import scala.util.Random
+import scala.util.control.NoStackTrace
 
 import akka.Done
 import akka.persistence.query.typed.EventEnvelope
@@ -27,7 +29,8 @@ import akka.projection.r2dbc.scaladsl.R2dbcSession
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class R2dbcProjectionHandler(tag: String, projectionId: Int, readOnly: Boolean)(implicit ec: ExecutionContext)
+class R2dbcProjectionHandler(projectionId: ProjectionId, projectionIndex: Int, readOnly: Boolean, failEvery: Int)(
+    implicit ec: ExecutionContext)
     extends R2dbcHandler[EventEnvelope[ConfigurablePersistentActor.Event]] {
 
   private val log: Logger = LoggerFactory.getLogger(getClass)
@@ -40,13 +43,24 @@ class R2dbcProjectionHandler(tag: String, projectionId: Int, readOnly: Boolean)(
     log.trace(
       "Event {} for tag {} sequence {} test {}",
       envelope.event.payload,
-      tag,
+      projectionId.id,
       envelope.offset,
       envelope.event.testName)
+
+    if (failEvery != Int.MaxValue && Random.nextInt(failEvery) == 1) {
+      throw new RuntimeException(
+        s"Simulated failure when processing persistence id ${envelope.persistenceId} sequence nr ${envelope.sequenceNr} offset ${envelope.offset}")
+        with NoStackTrace
+    }
+
     count += 1
     if (count == 1000) {
       val durationMs = (System.nanoTime() - startTime) / 1000 / 1000
-      log.info("Projection [{}] throughput [{}] events/s in [{}] ms", tag, 1000 * count / durationMs, durationMs)
+      log.info(
+        "Projection [{}] throughput [{}] events/s in [{}] ms",
+        projectionId.id,
+        1000 * count / durationMs,
+        durationMs)
       count = 0
       startTime = System.nanoTime()
     }
@@ -57,7 +71,7 @@ class R2dbcProjectionHandler(tag: String, projectionId: Int, readOnly: Boolean)(
       val stmt = session
         .createStatement("insert into events(name, projection_id, event) values ($1, $2, $3)")
         .bind("$1", envelope.event.testName)
-        .bind("$2", projectionId)
+        .bind("$2", projectionIndex)
         .bind("$3", envelope.event.payload)
       session.updateOne(stmt).map(_ => Done)
     }
@@ -66,7 +80,7 @@ class R2dbcProjectionHandler(tag: String, projectionId: Int, readOnly: Boolean)(
 
 // when using this consider reducing failure otherwise a high change of at least one grouped envelope causing an error
 // and no progress will be made
-class R2dbcGroupedProjectionHandler(projectionId: ProjectionId, projectionIndex: Int, readOnly: Boolean)(
+class R2dbcGroupedProjectionHandler(projectionId: ProjectionId, projectionIndex: Int, readOnly: Boolean, failEvery: Int)(
     implicit ec: ExecutionContext)
     extends R2dbcHandler[Seq[EventEnvelope[ConfigurablePersistentActor.Event]]] {
   private val log: Logger = LoggerFactory.getLogger(getClass)
@@ -81,6 +95,14 @@ class R2dbcGroupedProjectionHandler(projectionId: ProjectionId, projectionIndex:
       envelopes.size,
       projectionId.id,
       envelopes.headOption.map(_.event.testName).getOrElse("<unknown>"))
+
+    envelopes.foreach { envelope =>
+      if (failEvery != Int.MaxValue && Random.nextInt(failEvery) == 1) {
+        throw new RuntimeException(
+          s"Simulated failure when processing persistence id ${envelope.persistenceId} sequence nr ${envelope.sequenceNr} offset ${envelope.offset}")
+          with NoStackTrace
+      }
+    }
 
     count += envelopes.size
     if (count >= 1000) {
