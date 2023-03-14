@@ -20,6 +20,9 @@ lazy val `akka-projection-testing` = project
     startYear := Some(2020),
     homepage := Some(url("https://akka.io")),
     licenses += ("Apache-2.0", new URL("https://www.apache.org/licenses/LICENSE-2.0.txt")),
+    headerLicense := Some(
+      HeaderLicense.Custom("""Copyright (C) 2020 - 2023 Lightbend Inc. <https://www.lightbend.com>""")
+    ),
     scalacOptions in Compile ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     javacOptions in Compile ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
     libraryDependencies ++= Seq(
