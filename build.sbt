@@ -1,10 +1,10 @@
-val AkkaVersion = "2.8.0-M4"
-val AkkaPersistenceCassandraVersion = "1.1.0"
-val AkkaHttpVersion = "10.5.0-M1"
-val AkkaProjectionVersion = "1.4.0-M1"
-val AkkaManagementVersion = "1.2.0"
-val AkkaPersistenceJdbc = "5.2.0"
-val AkkaPersistenceR2dbc = "1.1.0-M4"
+val AkkaVersion = "2.8.4"
+val AkkaPersistenceCassandraVersion = "1.1.1"
+val AkkaHttpVersion = "10.5.2"
+val AkkaProjectionVersion = "1.4.2"
+val AkkaManagementVersion = "1.4.1"
+val AkkaPersistenceJdbc = "5.2.1"
+val AkkaPersistenceR2dbc = "1.1.2"
 
 ThisBuild / dynverSeparator := "-"
 
@@ -13,7 +13,7 @@ lazy val `akka-projection-testing` = project
   .enablePlugins(JavaAppPackaging, DockerPlugin)
   .settings(
     organization := "akka.projection.testing",
-    scalaVersion := "2.13.10",
+    scalaVersion := "2.13.11",
     organization := "com.typesafe.akka",
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com/")),
@@ -35,7 +35,7 @@ lazy val `akka-projection-testing` = project
         "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % AkkaPersistenceCassandraVersion,
         "com.lightbend.akka" %% "akka-persistence-jdbc" % AkkaPersistenceJdbc,
         "com.lightbend.akka" %% "akka-persistence-r2dbc" % AkkaPersistenceR2dbc,
-        "com.lightbend.akka" %% "akka-projection-r2dbc" % AkkaPersistenceR2dbc,
+        "com.lightbend.akka" %% "akka-projection-r2dbc" % AkkaProjectionVersion,
         "com.lightbend.akka" %% "akka-projection-eventsourced" % AkkaProjectionVersion,
         "com.lightbend.akka" %% "akka-projection-cassandra" % AkkaProjectionVersion,
         "com.lightbend.akka" %% "akka-projection-jdbc" % AkkaProjectionVersion,
