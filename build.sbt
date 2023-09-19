@@ -1,10 +1,10 @@
-val AkkaVersion = "2.8.4"
+val AkkaVersion = "2.9.0-M1"
 val AkkaPersistenceCassandraVersion = "1.1.1"
 val AkkaHttpVersion = "10.5.2"
-val AkkaProjectionVersion = "1.4.2"
+val AkkaProjectionVersion = "1.5.0-M4"
 val AkkaManagementVersion = "1.4.1"
 val AkkaPersistenceJdbc = "5.2.1"
-val AkkaPersistenceR2dbc = "1.1.2"
+val AkkaPersistenceR2dbc = "1.2.0-M5"
 
 ThisBuild / dynverSeparator := "-"
 
