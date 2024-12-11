@@ -177,10 +177,10 @@ object LoadTest {
               ctx.log.error("TestPhase: Load generation failed", t)
               Behaviors.stopped
           }
-          .receiveSignal { case (ctx, Terminated(_)) =>
+          .receiveSignal { case (signalCtx, Terminated(_)) =>
             val finishTime = System.nanoTime()
             val totalTime = finishTime - startTime
-            ctx.log.info(
+            signalCtx.log.info(
               "TestPhase: Validation finished for test {}, terminating. Total time for {} events. {}. Rough rate: {}",
               testName,
               total,

@@ -1,10 +1,10 @@
-val AkkaVersion = "2.9.0-M1"
-val AkkaPersistenceCassandraVersion = "1.1.1"
-val AkkaHttpVersion = "10.5.2"
-val AkkaProjectionVersion = "1.5.0-M4"
-val AkkaManagementVersion = "1.4.1"
-val AkkaPersistenceJdbc = "5.2.1"
-val AkkaPersistenceR2dbc = "1.2.0-M5"
+val AkkaVersion = "2.10.0"
+val AkkaPersistenceCassandraVersion = "1.3.0"
+val AkkaHttpVersion = "10.7.0"
+val AkkaProjectionVersion = "1.6.5"
+val AkkaManagementVersion = "1.6.0"
+val AkkaPersistenceJdbc = "5.5.0"
+val AkkaPersistenceR2dbc = "1.3.0"
 
 ThisBuild / dynverSeparator := "-"
 
@@ -13,7 +13,7 @@ lazy val `akka-projection-testing` = project
   .enablePlugins(JavaAppPackaging, DockerPlugin)
   .settings(
     organization := "akka.projection.testing",
-    scalaVersion := "2.13.11",
+    scalaVersion := "2.13.15",
     organization := "com.typesafe.akka",
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com/")),
@@ -32,7 +32,6 @@ lazy val `akka-projection-testing` = project
       "com.typesafe.akka" %% "akka-persistence-query" % AkkaVersion,
       "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
       "com.typesafe.akka" %% "akka-persistence-cassandra" % AkkaPersistenceCassandraVersion,
-      "com.typesafe.akka" %% "akka-persistence-cassandra-launcher" % AkkaPersistenceCassandraVersion,
       "com.lightbend.akka" %% "akka-persistence-jdbc" % AkkaPersistenceJdbc,
       "com.lightbend.akka" %% "akka-persistence-r2dbc" % AkkaPersistenceR2dbc,
       "com.lightbend.akka" %% "akka-projection-r2dbc" % AkkaProjectionVersion,
@@ -43,22 +42,19 @@ lazy val `akka-projection-testing` = project
       "com.lightbend.akka.management" %% "akka-management-cluster-http" % AkkaManagementVersion,
       "com.lightbend.akka.management" %% "akka-management-cluster-bootstrap" % AkkaManagementVersion,
       "com.lightbend.akka.discovery" %% "akka-discovery-kubernetes-api" % AkkaManagementVersion,
-      "com.zaxxer" % "HikariCP" % "3.4.5",
+      "com.zaxxer" % "HikariCP" % "6.2.1",
       "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % AkkaHttpVersion,
       "com.typesafe.akka" %% "akka-slf4j" % AkkaVersion,
-      // FIXME strange, something brings in slf4j 2.0.0-alpha
-      "org.slf4j" % "slf4j-api" % "2.0.6",
-      // "ch.qos.logback" % "logback-classic" % "1.2.11",
-      "ch.qos.logback" % "logback-classic" % "1.4.5", // for slf4j 2.0
-      "org.postgresql" % "postgresql" % "42.2.24",
-      "org.hdrhistogram" % "HdrHistogram" % "2.1.12",
+      "ch.qos.logback" % "logback-classic" % "1.5.12",
+      "org.postgresql" % "postgresql" % "42.7.4",
+      "org.hdrhistogram" % "HdrHistogram" % "2.2.2",
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test,
       "com.typesafe.akka" %% "akka-persistence-testkit" % AkkaVersion % Test,
       "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
       "com.lightbend.akka" %% "akka-projection-testkit" % AkkaProjectionVersion % Test,
-      "org.scalatest" %% "scalatest" % "3.2.7" % Test,
-      "commons-io" % "commons-io" % "2.4" % Test
+      "org.scalatest" %% "scalatest" % "3.2.19" % Test,
+      "commons-io" % "commons-io" % "2.18.0" % Test
 //        Cinnamon.library.cinnamonPrometheus,
 //        Cinnamon.library.cinnamonPrometheusHttpServer,
 //        Cinnamon.library.cinnamonAkkaTyped,
@@ -79,7 +75,7 @@ lazy val `akka-projection-testing` = project
     Test / logBuffered := false)
   //  .enablePlugins(Cinnamon)
   .settings(
-    dockerBaseImage := "eclipse-temurin:17.0.3_7-jre-jammy",
+    dockerBaseImage := "eclipse-temurin:21.0.5_11-jre-noble",
     dockerUsername := sys.props.get("docker.username"),
     dockerRepository := sys.props.get("docker.registry"),
     dockerUpdateLatest := true)
