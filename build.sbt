@@ -21,7 +21,7 @@ lazy val `akka-projection-testing` = project
     homepage := Some(url("https://akka.io")),
     licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
     headerLicense := Some(
-      HeaderLicense.Custom("""Copyright (C) 2020 - 2023 Lightbend Inc. <https://www.lightbend.com>""")),
+      HeaderLicense.Custom("""Copyright (C) 2020 - 2024 Lightbend Inc. <https://www.lightbend.com>""")),
     Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     Compile / javacOptions ++= Seq("-Xlint:unchecked", "-Xlint:deprecation"),
     resolvers += "Akka library repository".at("https://repo.akka.io/maven"),
