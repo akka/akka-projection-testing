@@ -1,28 +1,32 @@
 /*
- * Copyright (C) 2020 - 2023 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020 - 2024 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.projection.testing
 
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.concurrent.duration._
-
 import akka.Done
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
 import akka.cluster.sharding.typed.ShardingEnvelope
-import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, Entity, EntityTypeKey }
+import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import akka.cluster.sharding.typed.scaladsl.Entity
+import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.pattern.StatusReply
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
+import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 
 object ConfigurablePersistentActor {
 
   val Key: EntityTypeKey[Command] = EntityTypeKey[Command]("configurable")
 
   def init(settings: EventProcessorSettings, system: ActorSystem[_]): ActorRef[ShardingEnvelope[Command]] = {
-    ClusterSharding(system).init(Entity(Key)(ctx => apply(settings, ctx.entityId)).withRole("write-model").withStopMessage(Stop))
+    ClusterSharding(system).init(
+      Entity(Key)(ctx => apply(settings, ctx.entityId)).withRole("write-model").withStopMessage(Stop))
   }
 
   sealed trait Command

@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2020 - 2023 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020 - 2024 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.projection.testing
 
 import java.sql.Connection
+import javax.sql.DataSource
 
 import akka.japi.function
 import akka.projection.jdbc.JdbcSession
-import javax.sql.DataSource
 
 class HikariJdbcSession(source: DataSource) extends JdbcSession {
 

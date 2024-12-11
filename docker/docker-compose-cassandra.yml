@@ -1,8 +1,7 @@
-version: '2.2'
 services:
   cassandra:
     image: cassandra:3
-    container_name: apt_cassandra
+    container_name: cassandra
     ports:
       - "9042:9042"
     healthcheck:

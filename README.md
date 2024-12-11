@@ -13,31 +13,31 @@ It is currently support the following alternative Akka Persistence and Akka Proj
 Start a local PostgresSQL server on default port 5432. Note that this is also needed when testing with Cassandra.
 
 ```shell
-docker-compose -f docker/docker-compose-postgres.yml up -d
+docker compose -f docker/docker-compose-postgres.yml up --wait
 ```
 
 For testing with R2DBC you need to create the tables with:
 ```shell
-docker exec -i postgres_db psql -U postgres -t < ddl-scripts/create_tables.sql
+docker exec -i postgres-db psql -U postgres -t < ddl-scripts/create_tables_postgres.sql
 ```
 
 For testing with Cassandra start a local Cassandra in addition to the PostgresSQL:
 
 ```shell
-docker-compose -f docker/docker-compose-cassandra.yml up -d
+docker compose -f docker/docker-compose-cassandra.yml up --wait
 ```
 
 Adjust the includes in `local.conf` to choose testing with Cassandra, R2DBC or JDBC.
 
 Start the application:
 
-```
- sbt "run 2551"
+```shell
+sbt "run 2551"
 ```
 
 Start a test run:
 
-```
+```shell
 curl -X POST --data '{"name":"","nrActors":1000, "messagesPerActor": 100, "concurrentActors": 100, "bytesPerEvent": 100, "timeout": 60000}' --header "content-type: application/json" http://127.0.0.1:8051/test
 ```
 
@@ -63,8 +63,8 @@ are detected with a primary key.
 
 To inspect the database:
 
-```
-docker exec -it docker-postgres-db-1 psql -U postgres
+```shell
+docker exec -it postgres-db psql -U postgres
 ```
 
 

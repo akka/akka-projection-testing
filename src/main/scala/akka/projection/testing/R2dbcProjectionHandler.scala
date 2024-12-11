@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2023 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020 - 2024 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.projection.testing
@@ -68,8 +68,11 @@ class R2dbcProjectionHandler(projectionId: ProjectionId, projectionIndex: Int, r
 
 // when using this consider reducing failure otherwise a high change of at least one grouped envelope causing an error
 // and no progress will be made
-class R2dbcGroupedProjectionHandler(projectionId: ProjectionId, projectionIndex: Int, readOnly: Boolean, failEvery: Int)(
-    implicit ec: ExecutionContext)
+class R2dbcGroupedProjectionHandler(
+    projectionId: ProjectionId,
+    projectionIndex: Int,
+    readOnly: Boolean,
+    failEvery: Int)(implicit ec: ExecutionContext)
     extends R2dbcHandler[Seq[EventEnvelope[ConfigurablePersistentActor.Event]]] {
   private val log: Logger = LoggerFactory.getLogger(getClass)
   private var startTime = System.nanoTime()

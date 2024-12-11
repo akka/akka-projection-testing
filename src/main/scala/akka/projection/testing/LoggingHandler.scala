@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 - 2023 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020 - 2024 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.projection.testing
@@ -39,7 +39,7 @@ class LoggingHandler[Envelope](projectionId: ProjectionId) extends Handler[Envel
     val timestamp = envelope match {
       case env: akka.projection.eventsourced.EventEnvelope[_] => env.timestamp
       case env: akka.persistence.query.typed.EventEnvelope[_] => env.timestamp
-      case _                                                  => throw new IllegalArgumentException(s"Expected EventEnvelope, but was ${envelope.getClass.getName}")
+      case _ => throw new IllegalArgumentException(s"Expected EventEnvelope, but was ${envelope.getClass.getName}")
     }
     val lagMillis = System.currentTimeMillis() - timestamp
 
@@ -56,9 +56,9 @@ class LoggingHandler[Envelope](projectionId: ProjectionId) extends Handler[Envel
 
       log.info(
         s"$logId #$reportingCount: Processed ${histogram.getTotalCount} events in $durationMs ms, " +
-        s"throughput [${1000L * throughputCount / durationMs}] events/s, " +
-        s"max lag [${histogram.getMaxValue}] ms, " +
-        s"lag percentiles [${percentiles.map(p => s"$p%=${histogram.getValueAtPercentile(p)}ms").mkString("; ")}]")
+          s"throughput [${1000L * throughputCount / durationMs}] events/s, " +
+          s"max lag [${histogram.getMaxValue}] ms, " +
+          s"lag percentiles [${percentiles.map(p => s"$p%=${histogram.getValueAtPercentile(p)}ms").mkString("; ")}]")
       println(
         s"$logId #$reportingCount: HDR histogram [${percentiles.map(p => s"$p%=${histogram.getValueAtPercentile(p)}ms").mkString("; ")}]")
       histogram.outputPercentileDistribution(System.out, 1.0)
