@@ -5,26 +5,36 @@
 package akka.projection.testing
 
 import java.util.UUID
+import javax.sql.DataSource
+
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.DurationLong
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
 
 import akka.actor.Scheduler
-import akka.pattern.retry
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Terminated }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.DispatcherSelector
+import akka.actor.typed.Terminated
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.pattern.StatusReply
-import akka.projection.testing.LoadGeneration.{ RunTest, TestSummary }
+import akka.pattern.retry
+import akka.projection.testing.LoadGeneration.RunTest
+import akka.projection.testing.LoadGeneration.TestSummary
 import akka.projection.testing.LoadTest.Start
+import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
 import akka.util.Timeout
-import akka.{ Done, NotUsed }
-import javax.sql.DataSource
-import org.slf4j.{ Logger, LoggerFactory }
-import scala.concurrent.{ ExecutionContextExecutor, Future }
-import scala.concurrent.duration.{ DurationInt, DurationLong }
-import scala.util.{ Failure, Success }
-
-import akka.stream.scaladsl.Flow
+import akka.Done
+import akka.NotUsed
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 object LoadGeneration {
 
@@ -128,7 +138,9 @@ object LoadTest {
             retried.transform {
               case s @ Success(_) => s
               case Failure(t) =>
-                Failure(new RuntimeException(s"Load generation failed for entity id $entityId", t)) // this will be an ask timeout
+                Failure(
+                  new RuntimeException(s"Load generation failed for entity id $entityId", t)
+                ) // this will be an ask timeout
             }
           }
 
@@ -165,17 +177,16 @@ object LoadTest {
               ctx.log.error("TestPhase: Load generation failed", t)
               Behaviors.stopped
           }
-          .receiveSignal {
-            case (ctx, Terminated(_)) =>
-              val finishTime = System.nanoTime()
-              val totalTime = finishTime - startTime
-              ctx.log.info(
-                "TestPhase: Validation finished for test {}, terminating. Total time for {} events. {}. Rough rate: {}",
-                testName,
-                total,
-                akka.util.PrettyDuration.format(totalTime.nanos),
-                total / math.max(1, totalTime.nanos.toSeconds))
-              Behaviors.stopped
+          .receiveSignal { case (ctx, Terminated(_)) =>
+            val finishTime = System.nanoTime()
+            val totalTime = finishTime - startTime
+            ctx.log.info(
+              "TestPhase: Validation finished for test {}, terminating. Total time for {} events. {}. Rough rate: {}",
+              testName,
+              total,
+              akka.util.PrettyDuration.format(totalTime.nanos),
+              total / math.max(1, totalTime.nanos.toSeconds))
+            Behaviors.stopped
           }
     }
   }

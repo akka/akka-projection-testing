@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2020 - 2023 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020 - 2024 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.projection.testing
 
+import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
+
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
-
-import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
 
 class HttpServer(routes: Route, port: Int)(implicit system: ActorSystem[_]) {
   import system.executionContext

@@ -4,25 +4,31 @@
 
 package akka.projection.testing
 
-import akka.actor.ActorSystem
-import akka.actor.typed.scaladsl.adapter._
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.client.RequestBuilding.Post
-import akka.http.scaladsl.model.{ HttpRequest, StatusCodes }
-import akka.http.scaladsl.unmarshalling._
-import akka.management.cluster.{ ClusterHttpManagementJsonProtocol, ClusterMembers }
-import akka.projection.testing.TestRoutes.{ RunTest, _ }
-import akka.testkit.TestKit
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.concurrent.{ Eventually, ScalaFutures }
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{ Milliseconds, Seconds, Span }
-import org.scalatest.wordspec.AnyWordSpec
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.Try
 
+import akka.actor.ActorSystem
+import akka.actor.typed.scaladsl.adapter._
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.client.RequestBuilding.Post
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.unmarshalling._
+import akka.management.cluster.ClusterHttpManagementJsonProtocol
+import akka.management.cluster.ClusterMembers
+import akka.projection.testing.TestRoutes.RunTest
+import akka.projection.testing.TestRoutes._
+import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.Milliseconds
+import org.scalatest.time.Seconds
+import org.scalatest.time.Span
+import org.scalatest.wordspec.AnyWordSpec
 
 class IntegrationSpec
     extends AnyWordSpec

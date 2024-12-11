@@ -5,15 +5,15 @@
 package akka.projection.testing
 
 import scala.util.Random
-
-import akka.actor.typed.ActorSystem
-import akka.projection.eventsourced.EventEnvelope
-import akka.projection.jdbc.scaladsl.JdbcHandler
-import org.slf4j.{ Logger, LoggerFactory }
 import scala.util.Try
 import scala.util.control.NoStackTrace
 
+import akka.actor.typed.ActorSystem
 import akka.projection.ProjectionId
+import akka.projection.eventsourced.EventEnvelope
+import akka.projection.jdbc.scaladsl.JdbcHandler
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class ProjectionHandler(
     projectionId: ProjectionId,

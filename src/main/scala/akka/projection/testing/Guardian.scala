@@ -4,26 +4,32 @@
 
 package akka.projection.testing
 
+import scala.io.Source
+
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, PostStop }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.PostStop
 import akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess
-import akka.cluster.sharding.typed.{ ClusterShardingSettings, ShardedDaemonProcessSettings }
+import akka.cluster.sharding.typed.ClusterShardingSettings
+import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.typed.Cluster
 import akka.management.cluster.bootstrap.ClusterBootstrap
 import akka.management.scaladsl.AkkaManagement
 import akka.persistence.jdbc.testkit.scaladsl.SchemaUtils
 import akka.persistence.query.Offset
-import akka.projection.jdbc.scaladsl.JdbcProjection
-import akka.projection.scaladsl.SourceProvider
-import akka.projection.{ ProjectionBehavior, ProjectionId }
-import com.zaxxer.hikari.{ HikariConfig, HikariDataSource }
-import scala.io.Source
-
-import akka.projection.eventsourced.{ EventEnvelope => ProjectionEventEnvelope }
 import akka.persistence.query.typed.EventEnvelope
 import akka.projection.Projection
 import akka.projection.eventsourced.scaladsl.EventSourcedProvider
+import akka.projection.eventsourced.{ EventEnvelope => ProjectionEventEnvelope }
+import akka.projection.jdbc.scaladsl.JdbcProjection
 import akka.projection.r2dbc.scaladsl.R2dbcProjection
+import akka.projection.scaladsl.SourceProvider
+import akka.projection.ProjectionBehavior
+import akka.projection.ProjectionId
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 
 object Guardian {
 
@@ -135,8 +141,9 @@ object Guardian {
       val dataSource = new HikariDataSource(config)
 
       val schemaFile = Source.fromResource("create_tables_postgres.sql")
-      val postgresSchema = try schemaFile.mkString
-      finally schemaFile.close()
+      val postgresSchema =
+        try schemaFile.mkString
+        finally schemaFile.close()
 
       // Block until schema is created. Only one of these actors are created
       val dbSessionFactory: HikariJdbcSessionFactory = new HikariJdbcSessionFactory(dataSource)
@@ -178,13 +185,11 @@ object Guardian {
             shardedDaemonProcessSettings,
             Some(ProjectionBehavior.Stop))
         }
-
       }
 
-      Behaviors.receiveMessage[String](_ => Behaviors.same).receiveSignal {
-        case (_, PostStop) =>
-          dataSource.close()
-          Behaviors.stopped
+      Behaviors.receiveMessage[String](_ => Behaviors.same).receiveSignal { case (_, PostStop) =>
+        dataSource.close()
+        Behaviors.stopped
       }
     }
   }

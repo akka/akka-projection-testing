@@ -4,11 +4,13 @@
 
 package akka.projection.testing
 
-import akka.actor.typed.{ Behavior, PostStop }
-import akka.actor.typed.scaladsl.Behaviors
 import javax.sql.DataSource
 
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.Behavior
+import akka.actor.typed.PostStop
 
 object TestValidation {
 
@@ -103,9 +105,8 @@ object TestValidation {
               writeResult("timeout")
               Behaviors.stopped
           }
-          .receiveSignal {
-            case (_, PostStop) =>
-              Behaviors.stopped
+          .receiveSignal { case (_, PostStop) =>
+            Behaviors.stopped
           }
       }
 
