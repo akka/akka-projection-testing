@@ -2,7 +2,7 @@
  * Copyright (C) 2020 - 2024 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.projection.testing
+package akka.projection.testing.r2dbc
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
@@ -14,6 +14,7 @@ import akka.persistence.query.typed.EventEnvelope
 import akka.projection.ProjectionId
 import akka.projection.r2dbc.scaladsl.R2dbcHandler
 import akka.projection.r2dbc.scaladsl.R2dbcSession
+import akka.projection.testing.ConfigurablePersistentActor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
