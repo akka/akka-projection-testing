@@ -1,4 +1,15 @@
 services:
+  cassandra:
+    image: cassandra:3
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
   postgres-db:
     image: postgres:latest
     container_name: postgres-db
@@ -7,6 +18,8 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./jdbc/postgres/initdb:/docker-entrypoint-initdb.d
     healthcheck:
       test: ['CMD', 'pg_isready', "-q", "-d", "postgres", "-U", "postgres"]
       interval: 5s

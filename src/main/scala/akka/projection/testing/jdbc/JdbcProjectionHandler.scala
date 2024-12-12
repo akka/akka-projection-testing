@@ -2,7 +2,7 @@
  * Copyright (C) 2020 - 2024 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.projection.testing
+package akka.projection.testing.jdbc
 
 import scala.util.Random
 import scala.util.Try
@@ -12,10 +12,11 @@ import akka.actor.typed.ActorSystem
 import akka.projection.ProjectionId
 import akka.projection.eventsourced.EventEnvelope
 import akka.projection.jdbc.scaladsl.JdbcHandler
+import akka.projection.testing.ConfigurablePersistentActor
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class ProjectionHandler(
+class JdbcProjectionHandler(
     projectionId: ProjectionId,
     projectionIndex: Int,
     system: ActorSystem[_],
@@ -68,7 +69,7 @@ class ProjectionHandler(
 
 // when using this consider reducing failure otherwise a high change of at least one grouped envelope causing an error
 // and no progress will be made
-class GroupedProjectionHandler(
+class JdbcGroupedProjectionHandler(
     projectionId: ProjectionId,
     projectionIndex: Int,
     system: ActorSystem[_],

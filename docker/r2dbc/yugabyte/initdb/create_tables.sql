@@ -1,13 +1,13 @@
 create table if not exists events (
-    name varchar(256),
-    projection_id BIGINT,
-    event varchar(256),
-    constraint pkey primary key (name, projection_id, event)
+  name varchar(256),
+  projection_id BIGINT,
+  event varchar(256),
+  primary key ((name, projection_id) HASH, event)
 );
 
 create table if not exists results (
-    name varchar(256) primary key,
-    result varchar(256)
+  name varchar(256) primary key,
+  result varchar(256)
 );
 
 CREATE TABLE IF NOT EXISTS event_journal(
@@ -30,11 +30,12 @@ CREATE TABLE IF NOT EXISTS event_journal(
   meta_ser_manifest VARCHAR(255),
   meta_payload BYTEA,
 
-  PRIMARY KEY(persistence_id, seq_nr)
+  PRIMARY KEY(persistence_id HASH, seq_nr ASC)
 );
 
 -- `event_journal_slice_idx` is only needed if the slice based queries are used
-CREATE INDEX IF NOT EXISTS event_journal_slice_idx ON event_journal(slice, entity_type, db_timestamp, seq_nr);
+CREATE INDEX IF NOT EXISTS event_journal_slice_idx ON event_journal(slice ASC, entity_type ASC, db_timestamp ASC, seq_nr ASC, persistence_id, deleted)
+  SPLIT AT VALUES ((127), (255), (383), (511), (639), (767), (895));
 
 CREATE TABLE IF NOT EXISTS snapshot(
   slice INT NOT NULL,
@@ -51,11 +52,12 @@ CREATE TABLE IF NOT EXISTS snapshot(
   meta_ser_manifest VARCHAR(255),
   meta_payload BYTEA,
 
-  PRIMARY KEY(persistence_id)
+  PRIMARY KEY(persistence_id HASH)
 );
 
 -- `snapshot_slice_idx` is only needed if the slice based queries are used together with snapshot as starting point
-CREATE INDEX IF NOT EXISTS snapshot_slice_idx ON snapshot(slice, entity_type, db_timestamp);
+CREATE INDEX IF NOT EXISTS snapshot_slice_idx ON snapshot(slice ASC, entity_type ASC, db_timestamp ASC, persistence_id)
+  SPLIT AT VALUES ((127), (255), (383), (511), (639), (767), (895));
 
 CREATE TABLE IF NOT EXISTS durable_state (
   slice INT NOT NULL,
@@ -69,11 +71,12 @@ CREATE TABLE IF NOT EXISTS durable_state (
   state_payload BYTEA NOT NULL,
   tags TEXT ARRAY,
 
-  PRIMARY KEY(persistence_id, revision)
+  PRIMARY KEY(persistence_id HASH, revision ASC)
 );
 
 -- `durable_state_slice_idx` is only needed if the slice based queries are used
-CREATE INDEX IF NOT EXISTS durable_state_slice_idx ON durable_state(slice, entity_type, db_timestamp, revision);
+CREATE INDEX IF NOT EXISTS durable_state_slice_idx ON durable_state(slice ASC, entity_type ASC, db_timestamp ASC, revision ASC, persistence_id)
+  SPLIT AT VALUES ((127), (255), (383), (511), (639), (767), (895));
 
 -- Primitive offset types are stored in this table.
 -- If only timestamp based offsets are used this table is optional.
@@ -89,6 +92,7 @@ CREATE TABLE IF NOT EXISTS akka_projection_offset_store (
 );
 
 -- Timestamp based offsets are stored in this table.
+
 CREATE TABLE IF NOT EXISTS akka_projection_timestamp_offset_store (
   projection_name VARCHAR(255) NOT NULL,
   projection_key VARCHAR(255) NOT NULL,
@@ -100,8 +104,8 @@ CREATE TABLE IF NOT EXISTS akka_projection_timestamp_offset_store (
   -- timestamp_consumed is when the offset was stored
   -- the consumer lag is timestamp_consumed - timestamp_offset
   timestamp_consumed timestamp with time zone NOT NULL,
-  PRIMARY KEY(slice, projection_name, timestamp_offset, persistence_id, seq_nr)
-);
+  PRIMARY KEY(slice ASC, projection_name ASC, timestamp_offset ASC, persistence_id ASC, seq_nr ASC)
+) SPLIT AT VALUES ((127), (255), (383), (511), (639), (767), (895));
 
 CREATE TABLE IF NOT EXISTS akka_projection_management (
   projection_name VARCHAR(255) NOT NULL,

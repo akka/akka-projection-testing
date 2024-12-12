@@ -4,13 +4,13 @@
 
 package akka.projection.testing
 
-import javax.sql.DataSource
-
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
+import akka.actor.typed.scaladsl.Behaviors
 
 object TestValidation {
 
@@ -24,37 +24,25 @@ object TestValidation {
       nrProjections: Int,
       expectedNrEvents: Long,
       timeout: FiniteDuration,
-      source: DataSource): Behavior[String] = {
+      setup: TestSetup): Behavior[String] = {
     import scala.concurrent.duration._
     Behaviors.setup { ctx =>
+      import ctx.executionContext
+
       // Don't do this at home
       var checksSinceChange = 0
       var previousResult: Seq[Int] = Nil
+
+      // FIXME: awaiting futures (and running on blocking dispatcher)
+
       def validate(): ValidationResult = {
-        val results: Seq[Int] = (0 until nrProjections).map { projectionId =>
-          val conn = source.getConnection()
-          try {
-            val statement = conn.createStatement()
-            val resultSet = statement.executeQuery(
-              s"select count(*) from events where name = '$testName' and projection_id = $projectionId")
-            val result = if (resultSet.next()) {
-              val count = resultSet.getInt("count")
-              ctx.log.info(
-                "Test [{}]. Projection id: [{}]. Expected {} got {}!",
-                testName,
-                projectionId,
-                expectedNrEvents,
-                count)
-              count
-            } else {
-              throw new RuntimeException("Expected single row")
+        val results: Seq[Int] = Await.result(
+          Future.sequence {
+            (0 until nrProjections).map { projectionId =>
+              setup.countEvents(testName, projectionId)
             }
-            resultSet.close()
-            result
-          } finally {
-            conn.close()
-          }
-        }
+          },
+          10.seconds)
 
         if (results.forall(_ == expectedNrEvents)) {
           Pass
@@ -72,15 +60,11 @@ object TestValidation {
           }
         }
       }
+
       def writeResult(result: String): Unit = {
-        val conn = source.getConnection()
-        try {
-          conn.createStatement().execute(s"insert into results(name, result) values ('${testName}', '$result')")
-          conn.commit()
-        } finally {
-          conn.close()
-        }
+        Await.ready(setup.writeResult(testName, result), 5.seconds)
       }
+
       Behaviors.withTimers { timers =>
         timers.startTimerAtFixedRate("test", 2.seconds)
         timers.startSingleTimer("timeout", timeout)
@@ -101,7 +85,7 @@ object TestValidation {
                   Behaviors.stopped
               }
             case "timeout" =>
-              ctx.log.error("TestPhase: Timout out")
+              ctx.log.error("TestPhase: Timed out. Stopping")
               writeResult("timeout")
               Behaviors.stopped
           }

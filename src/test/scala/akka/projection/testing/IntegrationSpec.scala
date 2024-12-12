@@ -46,7 +46,8 @@ class IntegrationSpec
 
   "End to end test" should {
     "work" in {
-      val config = ConfigFactory.load("local.conf")
+      val configResource = sys.props.getOrElse("test.config", "local")
+      val config = ConfigFactory.load(configResource)
       systems += Main.startNode(2551, 8051, 9001, 8551, config).toClassic
       validateAllMembersUp(8551, 1)
       systems += Main.startNode(2552, 8052, 9002, 8552, config).toClassic
