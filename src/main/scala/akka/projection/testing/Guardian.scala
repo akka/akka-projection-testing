@@ -4,16 +4,14 @@
 
 package akka.projection.testing
 
-import scala.io.Source
-
-import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
-import akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess
+import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
+import akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess
 import akka.cluster.typed.Cluster
 import akka.management.cluster.bootstrap.ClusterBootstrap
 import akka.management.scaladsl.AkkaManagement
@@ -21,13 +19,13 @@ import akka.persistence.jdbc.testkit.scaladsl.SchemaUtils
 import akka.persistence.query.Offset
 import akka.persistence.query.typed.EventEnvelope
 import akka.projection.Projection
+import akka.projection.ProjectionBehavior
+import akka.projection.ProjectionId
 import akka.projection.eventsourced.scaladsl.EventSourcedProvider
 import akka.projection.eventsourced.{ EventEnvelope => ProjectionEventEnvelope }
 import akka.projection.jdbc.scaladsl.JdbcProjection
 import akka.projection.r2dbc.scaladsl.R2dbcProjection
 import akka.projection.scaladsl.SourceProvider
-import akka.projection.ProjectionBehavior
-import akka.projection.ProjectionId
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 
@@ -139,23 +137,7 @@ object Guardian {
       config.setAutoCommit(false)
       Class.forName("org.postgresql.Driver")
       val dataSource = new HikariDataSource(config)
-
-      val schemaFile = Source.fromResource("create_tables_postgres.sql")
-      val postgresSchema =
-        try schemaFile.mkString
-        finally schemaFile.close()
-
-      // Block until schema is created. Only one of these actors are created
       val dbSessionFactory: HikariJdbcSessionFactory = new HikariJdbcSessionFactory(dataSource)
-      val connection = dataSource.getConnection()
-      try {
-        connection.createStatement().execute(postgresSchema)
-        connection.commit()
-      } catch {
-        case t: Throwable => context.log.error("Failed to create postgres schema. Assuming it already exists.", t)
-      } finally {
-        connection.close()
-      }
 
       if (journal == Main.JDBC)
         SchemaUtils.createIfNotExists()
