@@ -51,6 +51,6 @@ final class CassandraTestSetup(settings: EventProcessorSettings)(implicit system
   override def readResult(testName: String): Future[String] =
     jdbc.readResult(testName)
 
-  override def finish(): Unit =
-    jdbc.finish()
+  override def cleanUp(): Unit =
+    jdbc.cleanUp()
 }
