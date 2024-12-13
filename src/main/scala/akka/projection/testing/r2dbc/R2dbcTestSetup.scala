@@ -127,5 +127,5 @@ final class R2dbcTestSetup(settings: EventProcessorSettings)(implicit system: Ac
       .map(_.getOrElse("not finished"))(ExecutionContext.parasitic)
   }
 
-  override def finish(): Unit = ()
+  override def cleanUp(): Unit = ()
 }
