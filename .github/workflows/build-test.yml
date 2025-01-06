@@ -21,31 +21,16 @@ jobs:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
-      - name: Checkout GitHub merge
-        if: github.event.pull_request
-        run: |-
-          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
-          git checkout scratch
-
-      - name: Cache Coursier cache
-        # https://github.com/coursier/cache-action/releases
-        # v6.4.5
-        uses: coursier/cache-action@1ff273bff02a8787bc9f1877d347948af647956d
-
-      - name: Set up JDK 21
-        # https://github.com/coursier/setup-action/releases
-        # v1.3.5
-        uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
-        with:
-          jvm: temurin:1.21
+      - name: Build setup
+        uses: ./.github/actions/build-setup
 
       - name: Code style check
         run: |-
           cp .jvmopts-ci .jvmopts
           sbt verifyCodeStyle
 
-  test:
-    name: Run tests
+  test-r2dbc:
+    name: Run tests - R2DBC
     runs-on: ubuntu-22.04
     if: github.repository == 'akka/akka-projection-testing'
     steps:
@@ -54,36 +39,49 @@ jobs:
         # v4.1.1
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
 
-      - name: Checkout GitHub merge
-        if: github.event.pull_request
-        run: |-
-          git fetch origin pull/${{ github.event.pull_request.number }}/merge:scratch
-          git checkout scratch
-
-      - name: Cache Coursier cache
-        # https://github.com/coursier/cache-action/releases
-        # v6.4.5
-        uses: coursier/cache-action@1ff273bff02a8787bc9f1877d347948af647956d
-
-      - name: Set up JDK 21
-        # https://github.com/coursier/setup-action/releases
-        # v1.3.5
-        uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
+      - name: Run integration test
+        uses: ./.github/actions/integration-test
         with:
-          jvm: temurin:1.21
+          docker-compose: r2dbc-postgres
+          test-config: local-r2dbc
 
-      - name: Docker - Postgres
-        run: |-
-          docker compose -f docker/docker-compose-postgres.yml up --wait
-          docker exec -i postgres-db psql -U postgres -t < ddl-scripts/create_tables_postgres.sql
+  test-jdbc:
+    name: Run tests - JDBC
+    runs-on: ubuntu-22.04
+    if: github.repository == 'akka/akka-projection-testing'
+    steps:
+      - name: Checkout
+        # https://github.com/actions/checkout/releases
+        # v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
 
-      - name: Test (R2DBC)
-        run: |-
-          cp .jvmopts-ci .jvmopts
-          sbt test
+      - name: Run integration test
+        uses: ./.github/actions/integration-test
+        with:
+          docker-compose: jdbc-postgres
+          test-config: local-jdbc
 
-      - name: After failure - docker logs
-        if: ${{ failure() }}
-        run: docker compose logs
+  test-cassandra:
+    name: Run tests - Cassandra
+    runs-on: ubuntu-22.04
+    if: github.repository == 'akka/akka-projection-testing'
+    steps:
+      - name: Checkout
+        # https://github.com/actions/checkout/releases
+        # v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Run integration test
+        uses: ./.github/actions/integration-test
+        with:
+          docker-compose: cassandra-jdbc-postgres
+          test-config: local-cassandra

@@ -2,7 +2,7 @@
  * Copyright (C) 2020 - 2024 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.projection.testing
+package akka.projection.testing.jdbc
 
 import javax.sql.DataSource
 

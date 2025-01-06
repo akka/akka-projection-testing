@@ -1,0 +1,29 @@
+name: "Integration Test"
+description: "Composite action steps for running an integration test"
+inputs:
+   docker-compose:
+     required: true
+     description: "Docker compose file to use for database setup"
+   test-config:
+     required: true
+     description: "Test config to select for integration tests"
+runs:
+  using: "composite"
+  steps:
+    - name: Build setup
+      uses: ./.github/actions/build-setup
+
+    - name: Database setup
+      shell: bash
+      run: docker compose -f docker/docker-compose-${{ inputs.docker-compose }}.yml up --wait
+
+    - name: Test
+      shell: bash
+      run: |-
+        cp .jvmopts-ci .jvmopts
+        sbt test -Dtest.config=${{ inputs.test-config }}
+
+    - name: After failure - docker logs
+      if: ${{ failure() }}
+      shell: bash
+      run: docker compose logs

@@ -10,30 +10,45 @@ It is currently support the following alternative Akka Persistence and Akka Proj
 
 ## Running a test locally
 
-Start a local PostgresSQL server on default port 5432. Note that this is also needed when testing with Cassandra.
+### R2DBC (Postgres)
+
+Start a local PostgresSQL server on default port 5432:
 
 ```shell
-docker compose -f docker/docker-compose-postgres.yml up --wait
+docker compose -f docker/docker-compose-r2dbc-postgres.yml up --wait
 ```
 
-For testing with R2DBC you need to create the tables with:
-```shell
-docker exec -i postgres-db psql -U postgres -t < ddl-scripts/create_tables_postgres.sql
-```
+Adjust the includes in `local.conf` to select R2DBC.
+
+### Cassandra and JDBC (Postgres)
 
 For testing with Cassandra start a local Cassandra in addition to the PostgresSQL:
 
 ```shell
-docker compose -f docker/docker-compose-cassandra.yml up --wait
+docker compose -f docker/docker-compose-cassandra-jdbc-postgres.yml up --wait
 ```
 
-Adjust the includes in `local.conf` to choose testing with Cassandra, R2DBC or JDBC.
+Adjust the includes in `local.conf` to select Cassandra.
+
+### JDBC (Postgres)
+
+Start a local PostgresSQL server on default port 5432:
+
+```shell
+docker compose -f docker/docker-compose-jdbc-postgres.yml up --wait
+```
+
+Adjust the includes in `local.conf` to select JDBC.
+
+### Run application
 
 Start the application:
 
 ```shell
 sbt "run 2551"
 ```
+
+### Start test run
 
 Start a test run:
 
