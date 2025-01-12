@@ -10,7 +10,7 @@ ThisBuild / dynverSeparator := "-"
 
 lazy val `akka-projection-testing` = project
   .in(file("."))
-  .enablePlugins(JavaAppPackaging, DockerPlugin)
+  .enablePlugins(JavaAppPackaging, DockerPlugin, Insights)
   .settings(
     organization := "akka.projection.testing",
     scalaVersion := "2.13.15",
@@ -54,13 +54,7 @@ lazy val `akka-projection-testing` = project
       "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
       "com.lightbend.akka" %% "akka-projection-testkit" % AkkaProjectionVersion % Test,
       "org.scalatest" %% "scalatest" % "3.2.19" % Test,
-      "commons-io" % "commons-io" % "2.18.0" % Test
-//        Cinnamon.library.cinnamonPrometheus,
-//        Cinnamon.library.cinnamonPrometheusHttpServer,
-//        Cinnamon.library.cinnamonAkkaTyped,
-//        Cinnamon.library.cinnamonAkkaPersistence
-    ),
-//    cinnamon in run := true,
+      "commons-io" % "commons-io" % "2.18.0" % Test),
     run / fork := true,
     // pass along config selection to forked jvm
     run / javaOptions ++= sys.props
