@@ -156,7 +156,7 @@ final class JdbcTestSetup(settings: EventProcessorSettings)(implicit system: Act
     }
   }
 
-  override def finish(): Unit = {
+  override def cleanUp(): Unit = {
     dataSource.close()
   }
 }
