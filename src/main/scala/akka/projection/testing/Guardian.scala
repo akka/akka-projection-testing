@@ -33,7 +33,7 @@ object Guardian {
       val settings = EventProcessorSettings(system)
 
       val setup = TestSetup(settings)
-      Await.ready(setup.init(), 10.seconds)
+      Await.result(setup.init(), 10.seconds)
 
       val shardRegion = ConfigurablePersistentActor.init(settings, system)
 
@@ -62,7 +62,7 @@ object Guardian {
       }
 
       Behaviors.receiveMessage[String](_ => Behaviors.same).receiveSignal { case (_, PostStop) =>
-        setup.finish()
+        setup.cleanUp()
         Behaviors.stopped
       }
     }

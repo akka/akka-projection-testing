@@ -26,4 +26,4 @@ runs:
     - name: After failure - docker logs
       if: ${{ failure() }}
       shell: bash
-      run: docker compose logs
+      run: docker compose -f docker/docker-compose-${{ inputs.docker-compose }}.yml logs
