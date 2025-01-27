@@ -25,6 +25,7 @@ import akka.projection.eventsourced.scaladsl.EventSourcedProvider
 import akka.projection.scaladsl.SourceProvider
 import akka.projection.testing.ConfigurablePersistentActor
 import akka.projection.testing.EventProcessorSettings
+import akka.projection.testing.EventProcessorSettings.ProjectionType
 import akka.projection.testing.LoggingHandler
 import akka.projection.testing.TestSetup
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue
@@ -61,30 +62,52 @@ final class DynamoDBTestSetup(settings: EventProcessorSettings)(implicit system:
 
     val projection: Projection[EventEnvelope[ConfigurablePersistentActor.Event]] = {
       val projectionId = ProjectionId(s"test-projection-id-$projectionIndex", s"${sliceRange.min}-${sliceRange.max}")
-      if (settings.readOnly) {
-        DynamoDBProjection.atLeastOnce(
-          projectionId,
-          settings = None,
-          sourceProvider,
-          () => new LoggingHandler(projectionId))
-      } else {
-        DynamoDBProjection.atLeastOnceGroupedWithin(
-          projectionId,
-          settings = None,
-          sourceProvider,
-          () =>
-            new DynamoDBGroupedProjectionHandler(
-              projectionId,
-              projectionIndex,
-              settings.readOnly,
-              settings.failEvery,
-              client))
 
-        // DynamoDBProjection.exactlyOnce(
-        //   projectionId,
-        //   settings = None,
-        //   sourceProvider,
-        //   () => new DynamoDBProjectionHandler(projectionId, projectionIndex, settings.readOnly, settings.failEvery))
+      settings.projectionType match {
+        case ProjectionType.AtLeastOnce =>
+          DynamoDBProjection.atLeastOnce(
+            projectionId,
+            settings = None,
+            sourceProvider,
+            () =>
+              new DynamoDBAtLeastOnceProjectionHandler(
+                projectionId,
+                projectionIndex,
+                settings.readOnly,
+                settings.failEvery,
+                client))
+
+        case ProjectionType.ExactlyOnce =>
+          DynamoDBProjection.exactlyOnce(
+            projectionId,
+            settings = None,
+            sourceProvider,
+            () =>
+              new DynamoDBExactlyOnceProjectionHandler(
+                projectionId,
+                projectionIndex,
+                settings.readOnly,
+                settings.failEvery))
+
+        case ProjectionType.Grouped =>
+          DynamoDBProjection.atLeastOnceGroupedWithin(
+            projectionId,
+            settings = None,
+            sourceProvider,
+            () =>
+              new DynamoDBGroupedProjectionHandler(
+                projectionId,
+                projectionIndex,
+                settings.readOnly,
+                settings.failEvery,
+                client))
+
+        case ProjectionType.LoggingOnly =>
+          DynamoDBProjection.atLeastOnce(
+            projectionId,
+            settings = None,
+            sourceProvider,
+            () => new LoggingHandler(projectionId))
       }
     }
 
