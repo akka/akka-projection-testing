@@ -24,6 +24,7 @@ import akka.projection.r2dbc.scaladsl.R2dbcProjection
 import akka.projection.scaladsl.SourceProvider
 import akka.projection.testing.ConfigurablePersistentActor
 import akka.projection.testing.EventProcessorSettings
+import akka.projection.testing.EventProcessorSettings.ProjectionType
 import akka.projection.testing.LoggingHandler
 import akka.projection.testing.TestSetup
 import org.slf4j.LoggerFactory
@@ -67,30 +68,42 @@ final class R2dbcTestSetup(settings: EventProcessorSettings)(implicit system: Ac
         sliceRange.max)
 
     val projection: Projection[EventEnvelope[ConfigurablePersistentActor.Event]] = {
-      val projectionId =
-        ProjectionId(s"test-projection-id-$projectionIndex", s"${sliceRange.min}-${sliceRange.max}")
-      if (settings.readOnly) {
-        R2dbcProjection.atLeastOnceAsync(
-          projectionId,
-          settings = None,
-          sourceProvider,
-          () => new LoggingHandler(projectionId))
-      } else {
-        R2dbcProjection.groupedWithin(
-          projectionId,
-          settings = None,
-          sourceProvider,
-          () =>
-            new R2dbcGroupedProjectionHandler(projectionId, projectionIndex, settings.readOnly, settings.failEvery)(
-              system.executionContext))
+      val projectionId = ProjectionId(s"test-projection-id-$projectionIndex", s"${sliceRange.min}-${sliceRange.max}")
 
-        // R2dbcProjection.exactlyOnce(
-        //   projectionIndex,
-        //   settings = None,
-        //   sourceProvider,
-        //   () =>
-        //     new R2dbcProjectionHandler(projectionIndex, projectionIndex, settings.readOnly, settings.failEvery)(
-        //       system.executionContext))
+      settings.projectionType match {
+        case ProjectionType.AtLeastOnce =>
+          R2dbcProjection.atLeastOnce(
+            projectionId,
+            settings = None,
+            sourceProvider,
+            () =>
+              new R2dbcProjectionHandler(projectionId, projectionIndex, settings.readOnly, settings.failEvery)(
+                system.executionContext))
+
+        case ProjectionType.ExactlyOnce =>
+          R2dbcProjection.exactlyOnce(
+            projectionId,
+            settings = None,
+            sourceProvider,
+            () =>
+              new R2dbcProjectionHandler(projectionId, projectionIndex, settings.readOnly, settings.failEvery)(
+                system.executionContext))
+
+        case ProjectionType.Grouped =>
+          R2dbcProjection.groupedWithin(
+            projectionId,
+            settings = None,
+            sourceProvider,
+            () =>
+              new R2dbcGroupedProjectionHandler(projectionId, projectionIndex, settings.readOnly, settings.failEvery)(
+                system.executionContext))
+
+        case ProjectionType.LoggingOnly =>
+          R2dbcProjection.atLeastOnceAsync(
+            projectionId,
+            settings = None,
+            sourceProvider,
+            () => new LoggingHandler(projectionId))
       }
     }
 

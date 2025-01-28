@@ -6,8 +6,6 @@ package akka.projection.testing.r2dbc
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import scala.util.Random
-import scala.util.control.NoStackTrace
 
 import akka.Done
 import akka.persistence.query.typed.EventEnvelope
@@ -15,44 +13,20 @@ import akka.projection.ProjectionId
 import akka.projection.r2dbc.scaladsl.R2dbcHandler
 import akka.projection.r2dbc.scaladsl.R2dbcSession
 import akka.projection.testing.ConfigurablePersistentActor
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import akka.projection.testing.TestProjectionHandler
 
-class R2dbcProjectionHandler(projectionId: ProjectionId, projectionIndex: Int, readOnly: Boolean, failEvery: Int)(
-    implicit ec: ExecutionContext)
-    extends R2dbcHandler[EventEnvelope[ConfigurablePersistentActor.Event]] {
-
-  private val log: Logger = LoggerFactory.getLogger(getClass)
-  private var startTime = System.nanoTime()
-  private var count = 0
+class R2dbcProjectionHandler(
+    val projectionId: ProjectionId,
+    projectionIndex: Int,
+    readOnly: Boolean,
+    val failEvery: Int)(implicit ec: ExecutionContext)
+    extends R2dbcHandler[EventEnvelope[ConfigurablePersistentActor.Event]]
+    with TestProjectionHandler[EventEnvelope] {
 
   override def process(
       session: R2dbcSession,
       envelope: EventEnvelope[ConfigurablePersistentActor.Event]): Future[Done] = {
-    log.trace(
-      "Event {} for tag {} sequence {} test {}",
-      envelope.event.payload,
-      projectionId.id,
-      envelope.offset,
-      envelope.event.testName)
-
-    if (failEvery != Int.MaxValue && Random.nextInt(failEvery) == 1) {
-      throw new RuntimeException(
-        s"Simulated failure when processing persistence id ${envelope.persistenceId} sequence nr ${envelope.sequenceNr} offset ${envelope.offset}")
-        with NoStackTrace
-    }
-
-    count += 1
-    if (count == 1000) {
-      val durationMs = (System.nanoTime() - startTime) / 1000 / 1000
-      log.info(
-        "Projection [{}] throughput [{}] events/s in [{}] ms",
-        projectionId.id,
-        1000 * count / durationMs,
-        durationMs)
-      count = 0
-      startTime = System.nanoTime()
-    }
+    testProcessing(envelope)
 
     if (readOnly)
       Future.successful(Done)
@@ -70,43 +44,17 @@ class R2dbcProjectionHandler(projectionId: ProjectionId, projectionIndex: Int, r
 // when using this consider reducing failure otherwise a high change of at least one grouped envelope causing an error
 // and no progress will be made
 class R2dbcGroupedProjectionHandler(
-    projectionId: ProjectionId,
+    val projectionId: ProjectionId,
     projectionIndex: Int,
     readOnly: Boolean,
-    failEvery: Int)(implicit ec: ExecutionContext)
-    extends R2dbcHandler[Seq[EventEnvelope[ConfigurablePersistentActor.Event]]] {
-  private val log: Logger = LoggerFactory.getLogger(getClass)
-  private var startTime = System.nanoTime()
-  private var count = 0
+    val failEvery: Int)(implicit ec: ExecutionContext)
+    extends R2dbcHandler[Seq[EventEnvelope[ConfigurablePersistentActor.Event]]]
+    with TestProjectionHandler[EventEnvelope] {
 
   override def process(
       session: R2dbcSession,
       envelopes: Seq[EventEnvelope[ConfigurablePersistentActor.Event]]): Future[Done] = {
-    log.trace(
-      "Persisting {} events for projection {} for test {}",
-      envelopes.size,
-      projectionId.id,
-      envelopes.headOption.map(_.event.testName).getOrElse("<unknown>"))
-
-    envelopes.foreach { envelope =>
-      if (failEvery != Int.MaxValue && Random.nextInt(failEvery) == 1) {
-        throw new RuntimeException(
-          s"Simulated failure when processing persistence id ${envelope.persistenceId} sequence nr ${envelope.sequenceNr} offset ${envelope.offset}")
-          with NoStackTrace
-      }
-    }
-
-    count += envelopes.size
-    if (count >= 1000) {
-      val durationMs = (System.nanoTime() - startTime) / 1000 / 1000
-      log.info(
-        "Projection [{}] throughput [{}] events/s in [{}] ms",
-        projectionId.id,
-        1000 * count / durationMs,
-        durationMs)
-      count = 0
-      startTime = System.nanoTime()
-    }
+    testProcessingGroup(envelopes)
 
     if (readOnly)
       Future.successful(Done)

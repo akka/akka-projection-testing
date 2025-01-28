@@ -22,6 +22,7 @@ import akka.projection.jdbc.scaladsl.JdbcProjection
 import akka.projection.scaladsl.SourceProvider
 import akka.projection.testing.ConfigurablePersistentActor
 import akka.projection.testing.EventProcessorSettings
+import akka.projection.testing.EventProcessorSettings.ProjectionType
 import akka.projection.testing.LoggingHandler
 import akka.projection.testing.TestSetup
 import com.zaxxer.hikari.HikariConfig
@@ -79,30 +80,37 @@ final class JdbcTestSetup(settings: EventProcessorSettings)(implicit system: Act
 
     val projection: Projection[ProjectionEventEnvelope[ConfigurablePersistentActor.Event]] = {
       val projectionId = ProjectionId(s"test-projection-id-$projectionIndex", tag)
-      if (settings.readOnly) {
-        JdbcProjection.atLeastOnceAsync(
-          projectionId,
-          sourceProvider,
-          () => factory.newSession(),
-          () => new LoggingHandler(projectionId))
-      } else {
-        JdbcProjection.groupedWithin(
-          projectionId,
-          sourceProvider,
-          () => factory.newSession(),
-          () =>
-            new JdbcGroupedProjectionHandler(
-              projectionId,
-              projectionIndex,
-              system,
-              settings.readOnly,
-              settings.failEvery))
+
+      settings.projectionType match {
+        case ProjectionType.AtLeastOnce =>
+          JdbcProjection.atLeastOnce(
+            projectionId,
+            sourceProvider,
+            () => factory.newSession(),
+            () => new JdbcProjectionHandler(projectionId, projectionIndex, settings.readOnly, settings.failEvery))
+
+        case ProjectionType.ExactlyOnce =>
+          JdbcProjection.exactlyOnce(
+            projectionId,
+            sourceProvider,
+            () => factory.newSession(),
+            () => new JdbcProjectionHandler(projectionId, projectionIndex, settings.readOnly, settings.failEvery))
+
+        case ProjectionType.Grouped =>
+          JdbcProjection.groupedWithin(
+            projectionId,
+            sourceProvider,
+            () => factory.newSession(),
+            () =>
+              new JdbcGroupedProjectionHandler(projectionId, projectionIndex, settings.readOnly, settings.failEvery))
+
+        case ProjectionType.LoggingOnly =>
+          JdbcProjection.atLeastOnceAsync(
+            projectionId,
+            sourceProvider,
+            () => factory.newSession(),
+            () => new LoggingHandler(projectionId))
       }
-      // JdbcProjection.exactlyOnce(
-      //   projectionIndex,
-      //   sourceProvider,
-      //   () => factory.newSession(),
-      //   () => new ProjectionHandler(projectionIndex, projectionIndex, system, settings.readOnly, settings.failEvery))
     }
 
     ProjectionBehavior(projection)
