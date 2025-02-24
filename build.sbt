@@ -20,7 +20,12 @@ lazy val `akka-projection-testing` = project
     organizationHomepage := Some(url("https://www.lightbend.com/")),
     startYear := Some(2020),
     homepage := Some(url("https://akka.io")),
-    licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.txt")),
+    licenses := {
+      val tagOrBranch =
+        if (isSnapshot.value) "main"
+        else "v" + version.value
+      Seq(("LIGHTBEND COMMERCIAL SOFTWARE LICENSE AGREEMENT", url(s"https://raw.githubusercontent.com/akka/akka-projection-testing/${tagOrBranch}/LICENSE")))
+    },
     headerLicense := Some(
       HeaderLicense.Custom("""Copyright (C) 2020 - 2024 Lightbend Inc. <https://www.lightbend.com>""")),
     Compile / scalacOptions ++= Seq("-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
