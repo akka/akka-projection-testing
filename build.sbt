@@ -24,7 +24,9 @@ lazy val `akka-projection-testing` = project
       val tagOrBranch =
         if (isSnapshot.value) "main"
         else "v" + version.value
-      Seq(("LIGHTBEND COMMERCIAL SOFTWARE LICENSE AGREEMENT", url(s"https://raw.githubusercontent.com/akka/akka-projection-testing/${tagOrBranch}/LICENSE")))
+      Seq(
+        "LIGHTBEND COMMERCIAL SOFTWARE LICENSE AGREEMENT" ->
+          url(s"https://raw.githubusercontent.com/akka/akka-projection-testing/${tagOrBranch}/LICENSE"))
     },
     headerLicense := Some(
       HeaderLicense.Custom("""Copyright (C) 2020 - 2024 Lightbend Inc. <https://www.lightbend.com>""")),
