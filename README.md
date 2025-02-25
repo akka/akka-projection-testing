@@ -182,3 +182,7 @@ the outputs printed at the end of `terraform apply` give all the information nee
 db_endpoint = "projection-testing.cgrtpi2lqrw8.us-east-2.rds.amazonaws.com:5432"
 ```
 
+License
+-------
+
+This is a test project and licensed as LIGHTBEND COMMERCIAL SOFTWARE LICENSE AGREEMENT.

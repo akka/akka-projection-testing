@@ -5,3 +5,4 @@ terraform.tfstate*
 kubeconfig_projection-testing
 *.zip
 .bsp
+.idea/
