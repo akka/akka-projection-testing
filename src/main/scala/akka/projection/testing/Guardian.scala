@@ -12,13 +12,12 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess
-import akka.cluster.typed.Cluster
 import akka.management.cluster.bootstrap.ClusterBootstrap
 import akka.management.scaladsl.AkkaManagement
 import akka.projection.ProjectionBehavior
+import akka.projection.testing.simulation.Engine
 
 object Guardian {
 
@@ -40,25 +39,24 @@ object Guardian {
       val loadGeneration: ActorRef[LoadGeneration.Command] =
         context.spawn(LoadGeneration(settings, shardRegion, setup), "load-generation")
 
+      val simulationEngine: ActorRef[Engine.Command] =
+        context.spawn(Engine(settings, shardRegion, setup), "simulation-engine")
+
       val httpPort = system.settings.config.getInt("test.http.port")
 
-      val server = new HttpServer(new TestRoutes(loadGeneration, setup).route, httpPort)
+      val server = new HttpServer(new TestRoutes(loadGeneration, simulationEngine, setup).route, httpPort)
       server.start()
 
-      if (Cluster(system).selfMember.hasRole("read-model")) {
-        // we only want to run the daemon processes on the read-model nodes
-        val shardingSettings = ClusterShardingSettings(system)
-        val shardedDaemonProcessSettings =
-          ShardedDaemonProcessSettings(system).withShardingSettings(shardingSettings.withRole("read-model"))
+      // we only want to run the daemon processes on the read-model nodes
+      val shardedDaemonProcessSettings = ShardedDaemonProcessSettings(system).withRole("read-model")
 
-        (0 until settings.nrProjections).foreach { projectionIndex =>
-          ShardedDaemonProcess(system).init(
-            name = s"test-projection-$projectionIndex",
-            settings.parallelism,
-            n => setup.createProjection(projectionIndex, n),
-            shardedDaemonProcessSettings,
-            Some(ProjectionBehavior.Stop))
-        }
+      (0 until settings.nrProjections).foreach { projectionIndex =>
+        ShardedDaemonProcess(system).init(
+          name = s"test-projection-$projectionIndex",
+          settings.parallelism,
+          n => setup.createProjection(projectionIndex, n),
+          shardedDaemonProcessSettings,
+          Some(ProjectionBehavior.Stop))
       }
 
       Behaviors.receiveMessage[String](_ => Behaviors.same).receiveSignal { case (_, PostStop) =>

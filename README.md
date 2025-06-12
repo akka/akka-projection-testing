@@ -5,7 +5,7 @@ This project tests event sourced actors events that are then read by a projectio
 It is currently support the following alternative Akka Persistence and Akka Projection setup:
 
 * R2DBC (Postgres) as the event sourcing event store and the projection using R2DBC (Postgres)
-* Cassandra as the event sourcing event store and the projection using JDBC (Postgres) 
+* Cassandra as the event sourcing event store and the projection using JDBC (Postgres)
 * JDBC (Postgres) as the event sourcing event store and the projection using JDBC (Postgres)
 
 ## Running a test locally
@@ -48,12 +48,16 @@ Start the application:
 sbt "run 2551"
 ```
 
+### Run simulations
+
+See [simulation/README.md] for more detail on running simulations. Or for simple test runs, see below.
+
 ### Start test run
 
 Start a test run:
 
 ```shell
-curl -X POST --data '{"name":"","nrActors":1000, "messagesPerActor": 100, "concurrentActors": 100, "bytesPerEvent": 100, "timeout": 60000}' --header "content-type: application/json" http://127.0.0.1:8051/test
+curl -X POST --data '{"nrActors":1000, "messagesPerActor": 100, "concurrentActors": 100, "bytesPerEvent": 100, "timeout": 60000}' --header "content-type: application/json" http://127.0.0.1:8051/test
 ```
 
 the params are:
@@ -73,7 +77,7 @@ the expected event total is the `nrActors` * `messagesPeractor` * `${event-proce
 Multiple projections can be run to increase the load on the tagging infrastructure while not overloading the normal event log.
 Each projection gets its own tag for the same reason. A real production application would have different projections use the same tag.
 
-The test checks that every message makes it into the projection. these are stored in the `events` table. Duplicated 
+The test checks that every message makes it into the projection. these are stored in the `events` table. Duplicated
 are detected with a primary key.
 
 To inspect the database:
@@ -137,7 +141,7 @@ Typically, multiple nodes are required to re-create issues as while one node is 
 
 ### cinnamon
 
-the application exposes persistence metrics via cinnamon and prometheus. the cinnamon prometheus sandbox can be used to 
+the application exposes persistence metrics via cinnamon and prometheus. the cinnamon prometheus sandbox can be used to
 view the metrics in grafana.
 
 ## failure scenarios
@@ -145,7 +149,7 @@ view the metrics in grafana.
 ### projection restart
 
 A known edge case is that a projection is restarted and delayed events from before the offset are then missed.
-This should only happen in when multiple nodes are writing events as delayed event should still be written in offset 
+This should only happen in when multiple nodes are writing events as delayed event should still be written in offset
 order.
 
 ## Deployment to eks/gke
@@ -176,7 +180,7 @@ this will create:
 - install the metrics server into the eks cluster (requried by the operator)
 - configure security groups to allow communication
 
-the outputs printed at the end of `terraform apply` give all the information needed to configure the `kubernetes/deployment.yaml` 
+the outputs printed at the end of `terraform apply` give all the information needed to configure the `kubernetes/deployment.yaml`
 
 ```
 db_endpoint = "projection-testing.cgrtpi2lqrw8.us-east-2.rds.amazonaws.com:5432"

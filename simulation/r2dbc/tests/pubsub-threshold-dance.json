@@ -1,0 +1,72 @@
+{
+  "$schema": "../../schema/run-simulation.json",
+  "simulation": {
+    "name": "pubsub-threshold-dance",
+    "description": "Pubsub threshold dance for 5 nodes (oscillates around 2000 events/s, 400/s per node)",
+    "stages": [
+      {
+        "name": "warmup-below-threshold",
+        "duration": "10m",
+        "generators": [
+          {
+            "entityId": {
+              "entity": { "count": "10k" }
+            },
+            "activity": {
+              "frequency": {
+                "rate": {
+                  "function": "linear",
+                  "initial": "0/s",
+                  "target": "200/s"
+                }
+              },
+              "duration": "10s",
+              "event": {
+                "frequency": "1/s",
+                "dataSize": "128B"
+              }
+            },
+            "random": {
+              "seed": 123456789
+            }
+          }
+        ]
+      },
+      {
+        "name": "oscillating-threshold",
+        "duration": "4h",
+        "generators": [
+          {
+            "entityId": {
+              "entity": { "count": "10k" }
+            },
+            "activity": {
+              "frequency": {
+                "rate": {
+                  "function": "sinusoidal",
+                  "base": "200/s",
+                  "amplitude": "100/s",
+                  "period": "20m"
+                }
+              },
+              "duration": "10s",
+              "event": {
+                "frequency": "1/s",
+                "dataSize": "128B"
+              }
+            },
+            "random": {
+              "seed": 123456789
+            }
+          }
+        ]
+      }
+    ],
+    "engine": {
+      "tick": "100ms",
+      "parallelism": 8,
+      "ackPersists": false,
+      "validationTimeout": "5m"
+    }
+  }
+}

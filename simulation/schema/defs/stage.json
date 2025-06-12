@@ -1,0 +1,159 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://akka.io/schemas/projection-testing/defs/stage.json",
+  "title": "Stage settings",
+  "description": "Settings for a simulation stage. Stages are executed sequentially in the order they are defined.",
+  "$comment": "Each stage represents a distinct phase of the simulation with its own workload characteristics",
+
+  "type": "object",
+  "required": ["duration", "generators"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Optional name for this stage for identification"
+    },
+    "duration": {
+      "$ref": "./types.json#/definitions/duration",
+      "description": "Total runtime for this stage"
+    },
+    "delay": {
+      "$ref": "./types.json#/definitions/duration",
+      "description": "Optional delay before this stage starts (relative to the end of the previous stage)"
+    },
+    "generators": {
+      "type": "array",
+      "description": "Generator configurations controlling workload creation for this stage",
+      "items": {
+        "$ref": "./generator.json"
+      },
+      "minItems": 1
+    }
+  },
+
+  "additionalProperties": false,
+
+  "examples": [
+    {
+      "name": "warmup",
+      "duration": "2m",
+      "generators": [
+        {
+          "entityId": {
+            "selection": "slice-first",
+            "slice": { "distribution": "uniform", "min": 0, "max": 127 },
+            "entitiesPerSlice": 32
+          },
+          "activity": {
+            "frequency": "5/s",
+            "duration": "3s",
+            "event": {
+              "frequency": "10/s",
+              "dataSize": "1kB"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "steady-state",
+      "duration": "10m",
+      "delay": "30s",
+      "generators": [
+        {
+          "entityId": {
+            "selection": "slice-first",
+            "slice": { "distribution": "uniform", "min": 0, "max": 63 },
+            "entitiesPerSlice": 128,
+            "distribution": {
+              "type": "zipf",
+              "exponent": 1.2,
+              "shuffled": true
+            }
+          },
+          "activity": {
+            "frequency": "20/s",
+            "duration": {
+              "distribution": "log-normal",
+              "median": "5s",
+              "p95": "15s"
+            },
+            "event": {
+              "frequency": {
+                "process": "poisson",
+                "rate": {
+                  "type": "random-walk",
+                  "initial": "10/s",
+                  "min": "5/s",
+                  "max": "15/s",
+                  "volatility": 0.2
+                }
+              },
+              "dataSize": {
+                "distribution": "log-normal",
+                "median": "2kB",
+                "p95": "8kB"
+              }
+            }
+          }
+        },
+        {
+          "entityId": {
+            "selection": "entity-first",
+            "entity": {
+              "distribution": "zipf",
+              "min": 1,
+              "max": 1024,
+              "exponent": 1.5,
+              "shuffled": false
+            },
+            "slices": "64-127"
+          },
+          "activity": {
+            "frequency": "5/s",
+            "duration": "10s",
+            "event": {
+              "frequency": "2/s",
+              "dataSize": "4kB"
+            }
+          },
+          "random": {
+            "algorithm": "XO_SHI_RO_256_PLUS",
+            "seed": 12345
+          }
+        }
+      ]
+    },
+    {
+      "name": "spike",
+      "duration": "5m",
+      "generators": [
+        {
+          "entityId": {
+            "selection": "slice-first",
+            "slice": { "distribution": "uniform", "min": 0, "max": 127 },
+            "entitiesPerSlice": 64
+          },
+          "activity": {
+            "frequency": {
+              "process": "poisson",
+              "rate": {
+                "type": "burst",
+                "base": "10/s",
+                "peak": "100/s",
+                "start": "1m",
+                "rampUp": "30s",
+                "burst": "2m",
+                "rampDown": "1m"
+              }
+            },
+            "duration": "5s",
+            "event": {
+              "frequency": "20/s",
+              "dataSize": "1kB"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

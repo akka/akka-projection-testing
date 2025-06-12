@@ -1,0 +1,348 @@
+{
+  "$schema": "../../schema/run-simulation.json",
+  "simulation": {
+    "name": "variations",
+    "description": "Diverse distributions and activity patterns across slices",
+    "stages": [
+      {
+        "name": "slice-variations-and-hotspots",
+        "duration": "6h",
+        "generators": [
+          {
+            "entityId": {
+              "entity": { "count": "10k" },
+              "slices": "0-127",
+              "sliceDistribution": {
+                "type": "zipf",
+                "exponent": 1.1,
+                "shuffled": true
+              }
+            },
+            "activity": {
+              "frequency": "15/s",
+              "duration": {
+                "distribution": "exponential",
+                "mean": "2s",
+                "min": "500ms",
+                "max": "10s"
+              },
+              "event": {
+                "frequency": "2/s",
+                "dataSize": {
+                  "distribution": "log-normal",
+                  "median": "512B",
+                  "p95": "2kB"
+                }
+              }
+            },
+            "random": {
+              "seed": 1010101
+            }
+          },
+          {
+            "entityId": {
+              "entity": { "count": "10k" },
+              "slices": "128-255",
+              "sliceDistribution": {
+                "type": "exponential",
+                "shuffled": false
+              }
+            },
+            "activity": {
+              "frequency": {
+                "rate": {
+                  "function": "sinusoidal",
+                  "base": "8/s",
+                  "amplitude": "4/s",
+                  "period": "30m"
+                }
+              },
+              "duration": {
+                "distribution": "weibull",
+                "scale": "4s",
+                "shape": 1.5
+              },
+              "event": {
+                "frequency": "0.5/s",
+                "dataSize": "2kB"
+              }
+            },
+            "random": {
+              "seed": 2020202
+            }
+          },
+          {
+            "entityId": {
+              "entity": { "count": "10k" },
+              "slices": "256-383",
+              "sliceDistribution": {
+                "type": "pareto",
+                "shape": 1.1,
+                "shuffled": true
+              }
+            },
+            "activity": {
+              "frequency": "5/s",
+              "duration": {
+                "distribution": "gamma",
+                "shape": 2.0,
+                "scale": "3s"
+              },
+              "event": {
+                "frequency": {
+                  "rate": {
+                    "function": "random-walk",
+                    "initial": "1.5/s",
+                    "min": "0.5/s",
+                    "max": "3/s",
+                    "volatility": 0.4
+                  }
+                },
+                "dataSize": {
+                  "distribution": "pareto",
+                  "min": "256B",
+                  "p95": "4kB"
+                }
+              }
+            },
+            "random": {
+              "seed": 3030303
+            }
+          },
+          {
+            "entityId": {
+              "entity": { "count": "10k" },
+              "slices": "384-511",
+              "sliceDistribution": {
+                "type": "uniform"
+              }
+            },
+            "activity": {
+              "frequency": {
+                "rate": {
+                  "function": "burst",
+                  "base": "3/s",
+                  "peak": "25/s",
+                  "start": "2h",
+                  "rampUp": "15m",
+                  "burst": "45m",
+                  "rampDown": "30m"
+                }
+              },
+              "duration": "1s",
+              "event": {
+                "frequency": "5/s",
+                "dataSize": {
+                  "distribution": "uniform",
+                  "min": "128B",
+                  "max": "1kB"
+                }
+              }
+            },
+            "random": {
+              "seed": 4040404
+            }
+          },
+          {
+            "entityId": {
+              "entity": { "count": "10k" },
+              "slices": "512-639",
+              "sliceDistribution": {
+                "type": "log-normal",
+                "shape": 2.0,
+                "shuffled": true
+              }
+            },
+            "activity": {
+              "frequency": "5/s",
+              "duration": {
+                "distribution": "categorical",
+                "categories": [
+                  { "value": "1s", "weight": 0.4 },
+                  { "value": "5s", "weight": 0.3 },
+                  { "value": "15s", "weight": 0.2 },
+                  { "value": "30s", "weight": 0.1 }
+                ]
+              },
+              "event": {
+                "frequency": "3/s",
+                "dataSize": "512B"
+              }
+            },
+            "random": {
+              "seed": 5050505
+            }
+          },
+          {
+            "entityId": {
+              "entity": { "count": "10k" },
+              "slices": "640-767",
+              "sliceDistribution": {
+                "type": "gamma",
+                "shape": 2.5,
+                "shuffled": false
+              }
+            },
+            "activity": {
+              "frequency": {
+                "rate": {
+                  "function": "linear",
+                  "initial": "2/s",
+                  "target": "12/s"
+                }
+              },
+              "duration": {
+                "distribution": "composite",
+                "samplers": [
+                  {
+                    "sampler": {
+                      "distribution": "exponential",
+                      "mean": "2s",
+                      "max": "8s"
+                    },
+                    "weight": 0.7
+                  },
+                  {
+                    "sampler": {
+                      "distribution": "uniform",
+                      "min": "10s",
+                      "max": "60s"
+                    },
+                    "weight": 0.3
+                  }
+                ]
+              },
+              "event": {
+                "frequency": "1.5/s",
+                "dataSize": {
+                  "distribution": "zipf",
+                  "min": "64B",
+                  "max": "8kB",
+                  "exponent": 1.3,
+                  "shuffled": true
+                }
+              }
+            },
+            "random": {
+              "seed": 6060606
+            }
+          },
+          {
+            "entityId": {
+              "entity": { "count": "10k" },
+              "slices": "768-895",
+              "sliceDistribution": {
+                "type": "weibull",
+                "shape": 0.8,
+                "shuffled": true
+              }
+            },
+            "activity": {
+              "frequency": {
+                "rate": {
+                  "function": "additive",
+                  "additiveRates": [
+                    {
+                      "function": "constant",
+                      "value": "6/s"
+                    },
+                    {
+                      "function": "sinusoidal",
+                      "base": "0/s",
+                      "amplitude": "8/s",
+                      "period": "2h",
+                      "shift": "30m"
+                    }
+                  ]
+                }
+              },
+              "duration": {
+                "distribution": "log-normal",
+                "mu": 1.2,
+                "sigma": 0.6,
+                "min": "500ms",
+                "max": "20s"
+              },
+              "event": {
+                "frequency": {
+                  "function": "sinusoidal",
+                  "base": "2/s",
+                  "amplitude": "1/s",
+                  "period": "10m"
+                },
+                "dataSize": {
+                  "distribution": "gamma",
+                  "shape": 1.5,
+                  "scale": "1kB"
+                }
+              }
+            },
+            "random": {
+              "seed": 7070707
+            }
+          },
+          {
+            "entityId": {
+              "entity": { "count": "10k" },
+              "slices": "896-1023",
+              "sliceDistribution": {
+                "type": "zipf",
+                "exponent": 2.2,
+                "shuffled": false
+              }
+            },
+            "activity": {
+              "frequency": {
+                "rate": {
+                  "function": "modulated",
+                  "carrier": {
+                    "function": "constant",
+                    "value": "10/s"
+                  },
+                  "modulator": {
+                    "function": "random-walk",
+                    "initial": "1.0/s",
+                    "min": "0.2/s",
+                    "max": "2.0/s",
+                    "volatility": 0.3,
+                    "trend": 0.1
+                  },
+                  "strength": 0.8
+                }
+              },
+              "duration": {
+                "distribution": "pareto",
+                "scale": "2s",
+                "shape": 1.6,
+                "max": "45s"
+              },
+              "event": {
+                "frequency": "0.8/s",
+                "dataSize": {
+                  "distribution": "composite",
+                  "samplers": [
+                    {
+                      "sampler": "256B",
+                      "weight": 0.6
+                    },
+                    {
+                      "sampler": {
+                        "distribution": "exponential",
+                        "mean": "4kB",
+                        "max": "16kB"
+                      },
+                      "weight": 0.4
+                    }
+                  ]
+                }
+              }
+            },
+            "random": {
+              "seed": 8080808
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

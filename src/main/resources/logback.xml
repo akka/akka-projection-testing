@@ -9,6 +9,7 @@
     <logger name="com.datastax.oss.driver" level="WARN"/>
     <logger name="com.codahale.metrics" level="INFO"/>
 
+<!--    <logger name="akka.projection.testing" level="DEBUG" /> -->
 <!--    <logger name="akka.persistence.r2dbc" level="DEBUG" />-->
 <!--    <logger name="akka.projection.r2dbc" level="DEBUG" />-->
 <!--    <logger name="io.r2dbc.postgresql.QUERY" level="DEBUG" />-->

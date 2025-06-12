@@ -53,9 +53,9 @@ class IntegrationSpec
       systems += Main.startNode(2552, 8052, 9002, 8552, config).toClassic
       validateAllMembersUp(8552, 2)
 
-      val test = RunTest("", 100, 1, 1, 100, 10000)
+      val test = RunTest(None, 100, 1, 1, 100, 10000)
       val response = Unmarshal(Http().singleRequest(Post("http://127.0.0.1:8051/test", test)).futureValue.entity)
-        .to[Response]
+        .to[RunTestResponse]
         .futureValue
 
       eventually {

@@ -18,7 +18,6 @@ import akka.actor.Scheduler
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
-import akka.actor.typed.DispatcherSelector
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
@@ -63,7 +62,7 @@ object LoadGeneration {
       case ActivateActors(testName, actors) =>
         (1 to actors).foreach { n =>
           val pid = s"${testName}-$n"
-          shardRegion ! ShardingEnvelope(pid, ConfigurablePersistentActor.WakeUp(testName))
+          shardRegion ! ShardingEnvelope(pid, ConfigurablePersistentActor.WakeUp)
         }
         Behaviors.same
     }
@@ -166,8 +165,7 @@ object LoadTest {
                   total / math.max(totalTime.nanos.toSeconds, 1))
                 val validation = ctx.spawn(
                   TestValidation(testName, settings.nrProjections, expected, t.seconds, setup),
-                  s"TestValidation=$testName",
-                  DispatcherSelector.blocking())
+                  s"TestValidation=$testName")
                 ctx.watch(validation)
                 Behaviors.same
               }

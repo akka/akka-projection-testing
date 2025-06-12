@@ -4,9 +4,10 @@
 
 package akka.projection.testing
 
-import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.util.Failure
+import scala.util.Success
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
@@ -19,31 +20,40 @@ object TestValidation {
   case object Fail extends ValidationResult
   case object NoChange extends ValidationResult
 
+  sealed trait Message
+  case object Check extends Message
+  final case class CheckResults(results: Seq[Int]) extends Message
+  case object CheckTimeout extends Message
+  final case class CheckFailure(error: Throwable) extends Message
+  case object ResultRecorded extends Message
+  final case class ResultFailure(error: Throwable) extends Message
+
   def apply(
       testName: String,
       nrProjections: Int,
       expectedNrEvents: Long,
       timeout: FiniteDuration,
-      setup: TestSetup): Behavior[String] = {
+      setup: TestSetup): Behavior[Message] = {
     import scala.concurrent.duration._
     Behaviors.setup { ctx =>
       import ctx.executionContext
 
-      // Don't do this at home
       var checksSinceChange = 0
       var previousResult: Seq[Int] = Nil
 
-      // FIXME: awaiting futures (and running on blocking dispatcher)
+      def countEvents(): Unit = {
+        val counts = Future.sequence {
+          (0 until nrProjections).map { projectionId =>
+            setup.countEvents(testName, projectionId)
+          }
+        }
+        ctx.pipeToSelf(counts) {
+          case Success(results) => CheckResults(results)
+          case Failure(error)   => CheckFailure(error)
+        }
+      }
 
-      def validate(): ValidationResult = {
-        val results: Seq[Int] = Await.result(
-          Future.sequence {
-            (0 until nrProjections).map { projectionId =>
-              setup.countEvents(testName, projectionId)
-            }
-          },
-          10.seconds)
-
+      def validate(results: Seq[Int]): ValidationResult = {
         if (results.forall(_ == expectedNrEvents)) {
           Pass
         } else {
@@ -53,7 +63,7 @@ object TestValidation {
             checksSinceChange = 0
           }
           previousResult = results
-          if (checksSinceChange > 20) { // no change for 40 seconds
+          if (checksSinceChange > 20) {
             NoChange
           } else {
             Fail
@@ -62,31 +72,45 @@ object TestValidation {
       }
 
       def writeResult(result: String): Unit = {
-        Await.ready(setup.writeResult(testName, result), 5.seconds)
+        ctx.pipeToSelf(setup.writeResult(testName, result)) {
+          case Success(_)     => ResultRecorded
+          case Failure(error) => ResultFailure(error)
+        }
       }
 
       Behaviors.withTimers { timers =>
-        timers.startTimerAtFixedRate("test", 2.seconds)
-        timers.startSingleTimer("timeout", timeout)
+        ctx.self ! Check
+        timers.startSingleTimer(CheckTimeout, timeout)
 
         Behaviors
-          .receiveMessage[String] {
-            case "test" =>
-              validate() match {
+          .receiveMessage[Message] {
+            case Check =>
+              countEvents()
+              Behaviors.same
+            case CheckResults(results) =>
+              validate(results) match {
                 case Pass =>
+                  ctx.log.info("TestPhase: Validated")
                   writeResult("pass")
-                  ctx.log.info("TestPhase: Validated. Stopping")
-                  Behaviors.stopped
                 case Fail =>
-                  Behaviors.same
+                  timers.startSingleTimer(Check, 2.seconds)
                 case NoChange =>
+                  ctx.log.error("TestPhase: Results are not changing")
                   writeResult("stuck")
-                  ctx.log.error("TestPhase: Results are not changing. Stopping")
-                  Behaviors.stopped
               }
-            case "timeout" =>
-              ctx.log.error("TestPhase: Timed out. Stopping")
+              Behaviors.same
+            case CheckTimeout =>
+              ctx.log.error("TestPhase: Timed out")
               writeResult("timeout")
+              Behaviors.same
+            case CheckFailure(error) =>
+              ctx.log.error("TestPhase: Validation check failed", error)
+              Behaviors.stopped
+            case ResultRecorded =>
+              ctx.log.info("TestPhase: Result recorded")
+              Behaviors.stopped
+            case ResultFailure(error) =>
+              ctx.log.error("TestPhase: Recording result failed", error)
               Behaviors.stopped
           }
           .receiveSignal { case (_, PostStop) =>

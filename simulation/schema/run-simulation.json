@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://akka.io/schemas/projection-testing/run-simulation.json",
+  "title": "Run Simulation",
+  "description": "Schema for configuring simulation runs in the Akka Projection Testing framework",
+  "$comment": "This schema defines the input format for the /simulation/run API endpoint",
+
+  "type": "object",
+  "required": ["simulation"],
+  "properties": {
+    "simulation": {
+      "$ref": "./defs/simulation.json",
+      "description": "The simulation configuration to execute"
+    },
+    "resetBeforeRun": {
+      "type": "boolean",
+      "description": "Whether to reset the database before running the simulation. If omitted, defaults to true",
+      "default": true
+    }
+  }
+}

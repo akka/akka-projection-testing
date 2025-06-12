@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://akka.io/schemas/projection-testing/defs/entity-id.json",
+  "title": "Entity id settings",
+  "description": "Configuration for entity access patterns in the simulation",
+  "$comment": "Controls how entities are selected for activities, including their distribution across slices",
+
+  "type": "object",
+  "required": ["entity"],
+  "properties": {
+    "entity": {
+      "$ref": "./sampler.json",
+      "description": "Sampler settings for selecting entities"
+    },
+    "slices": {
+      "$ref": "./types.json#/definitions/intRange",
+      "description": "Optional range of slices that the entities are distributed over, otherwise all slices"
+    },
+    "sliceDistribution": {
+      "$ref": "./distribution-shape.json",
+      "description": "Optional distribution shape for assigning slices to entities, otherwise uniform"
+    }
+  },
+
+  "additionalProperties": false,
+
+  "examples": [
+    {
+      "entity": { "distribution": "uniform", "min": 1, "max": 8192 },
+      "slices": "0-63",
+      "sliceDistribution": { "type": "zipf", "exponent": 1.2, "shuffled": true }
+    },
+    {
+      "entity": {
+        "distribution": "log-normal",
+        "median": 2000,
+        "p95": 10000,
+        "min": 1,
+        "max": 16384
+      },
+      "slices": "0-127,256-383",
+      "sliceDistribution": { "type": "uniform" }
+    },
+    {
+      "entity": { "distribution": "uniform", "min": 1, "max": 4096 }
+    }
+  ]
+}

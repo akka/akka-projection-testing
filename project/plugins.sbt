@@ -1,4 +1,4 @@
-addSbtPlugin("com.lightbend.cinnamon" % "sbt-cinnamon" % "2.21.2")
+addSbtPlugin("com.lightbend.cinnamon" % "sbt-cinnamon" % "2.21.3-20250408-0269a7e")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.2")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.10.0")
 addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.10.4")

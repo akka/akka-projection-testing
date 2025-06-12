@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://akka.io/schemas/projection-testing/defs/distribution-shape.json",
+  "title": "Distribution shape settings",
+  "description": "Represents the shape of a distribution used for sampling from a provided min-max range",
+  "$comment": "Distribution shapes define how values are distributed within a range, without specifying the actual range values",
+
+  "type": "object",
+  "required": ["type"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "uniform",
+        "zipf",
+        "exponential",
+        "weibull",
+        "gamma",
+        "log-normal",
+        "pareto"
+      ],
+      "description": "Type of distribution shape"
+    },
+    "exponent": {
+      "type": "number",
+      "minimum": 0.1,
+      "description": "Exponent for zipf distribution. Controls the steepness of the distribution"
+    },
+    "shuffled": {
+      "type": "boolean",
+      "description": "Whether to shuffle the distribution to randomize values while preserving frequency distribution. Most meaningful for distributions with unequal probabilities (like zipf, exponential, etc.).",
+      "default": false
+    },
+    "shape": {
+      "type": "number",
+      "minimum": 0.1,
+      "description": "Shape parameter for weibull, gamma, log-normal, pareto distributions"
+    }
+  },
+
+  "allOf": [
+    {
+      "if": {
+        "properties": { "type": { "const": "zipf" } }
+      },
+      "then": {
+        "required": ["exponent"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "weibull" } }
+      },
+      "then": {
+        "required": ["shape"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "gamma" } }
+      },
+      "then": {
+        "required": ["shape"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "log-normal" } }
+      },
+      "then": {
+        "required": ["shape"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "pareto" } }
+      },
+      "then": {
+        "required": ["shape"]
+      }
+    }
+  ],
+
+  "additionalProperties": false,
+
+  "examples": [
+    { "type": "uniform" },
+    { "type": "exponential" },
+    { "type": "exponential", "shuffled": true },
+    { "type": "zipf", "exponent": 1.2, "shuffled": true },
+    { "type": "weibull", "shape": 2.5 },
+    { "type": "gamma", "shape": 1.5 },
+    { "type": "log-normal", "shape": 0.5 },
+    { "type": "log-normal", "shape": 0.5, "shuffled": true },
+    { "type": "pareto", "shape": 1.5 }
+  ]
+}

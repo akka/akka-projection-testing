@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://akka.io/schemas/projection-testing/defs/types.json",
+  "title": "Common types",
+  "description": "Common type definitions used throughout the simulation schema",
+  "$comment": "These type definitions represent core value types with specific formats for the simulation framework",
+  "definitions": {
+    "duration": {
+      "type": "string",
+      "description": "Represents a duration with a time unit. Examples: '5s', '10ms', '1h'",
+      "pattern": "^\\d+(?:\\.\\d+)?\\s*(ns|nanos?|nanoseconds?|μs|micros?|microseconds?|ms|millis?|milliseconds?|s|secs?|seconds?|m|mins?|minutes?|h|hr?|hours?|d|days?)$",
+      "examples": ["5s", "100ms", "1.5h", "500ns", "10min", "1d"]
+    },
+    "optionalDuration": {
+      "anyOf": [{ "$ref": "#/definitions/duration" }, { "type": "null" }],
+      "description": "An optional duration value"
+    },
+    "count": {
+      "type": "string",
+      "description": "Represents a count, possibly with a unit multiplier (k=1000, M=1000000, G=1000000000)",
+      "pattern": "^\\d+(?:\\.\\d+)?\\s*([kMG]?)$",
+      "examples": ["100", "5k", "1.5M", "2G"]
+    },
+    "dataSize": {
+      "type": "string",
+      "description": "Represents a data size with binary or decimal units",
+      "pattern": "^\\d+(?:\\.\\d+)?\\s*(B|kB|MB|GB|KiB|MiB|GiB)$",
+      "examples": ["512B", "10kB", "1.5MB", "2GiB", "128KiB"]
+    },
+    "rate": {
+      "type": "string",
+      "description": "Rate per time unit. Examples: '10/s', '100/min'",
+      "pattern": "^\\d+(?:\\.\\d+)?\\s*/\\s*(ns|nanos?|nanoseconds?|μs|micros?|microseconds?|ms|millis?|milliseconds?|s|secs?|seconds?|mins?|minutes?|h|hr?|hours?|d|days?)$",
+      "examples": ["10/s", "1000/min", "0.5/ms", "5/h", "0.1/μs"]
+    },
+    "positiveNumber": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "A positive number value (greater than zero)"
+    },
+    "nonNegativeNumber": {
+      "type": "number",
+      "minimum": 0,
+      "description": "A non-negative number value (zero or greater)"
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "description": "A positive integer value (greater than zero)"
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "A non-negative integer value (zero or greater)"
+    },
+    "valueType": {
+      "oneOf": [
+        { "type": "integer" },
+        { "$ref": "#/definitions/duration" },
+        { "$ref": "#/definitions/dataSize" },
+        { "$ref": "#/definitions/count" }
+      ],
+      "description": "A value of one of the supported types: integer, duration, data size, or count"
+    },
+    "intRange": {
+      "type": "string",
+      "pattern": "^\\*|\\d+(-\\d+)?(,\\d+(-\\d+)?)*$",
+      "description": "Defines a range of integers. Can be a single value, a range (e.g., 1-5), or multiple ranges separated by commas (e.g., 1-5,10-15). '*' represents the default range (all values).",
+      "examples": ["*", "5", "1-10", "1-5,10-15", "3,7-9,15-20"]
+    },
+    "probability": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "A probability value between 0 and 1 inclusive"
+    },
+    "seed": {
+      "type": "integer",
+      "description": "Seed value for random number generators to ensure reproducibility"
+    }
+  }
+}
