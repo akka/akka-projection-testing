@@ -1,0 +1,293 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://akka.io/schemas/projection-testing/defs/sampler.json",
+  "title": "Sampler settings",
+  "description": "Settings that define how values are sampled from various probability distributions",
+  "$comment": "Samplers can be provided either as a direct value (constant sampler) or as distribution configuration",
+
+  "oneOf": [
+    {
+      "$ref": "./types.json#/definitions/valueType",
+      "description": "Direct value creates a constant sampler"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "count": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1 },
+            { "$ref": "./types.json#/definitions/count" }
+          ],
+          "description": "Shorthand for uniform distribution from 1 to count (for discrete types only)"
+        },
+        "distribution": {
+          "type": "string",
+          "enum": [
+            "constant",
+            "uniform",
+            "incremental",
+            "zipf",
+            "exponential",
+            "weibull",
+            "gamma",
+            "log-normal",
+            "pareto",
+            "categorical",
+            "composite"
+          ],
+          "description": "Type of distribution sampler"
+        },
+        "value": {
+          "$ref": "./types.json#/definitions/valueType",
+          "description": "The fixed value that will always be returned (for constant distribution)"
+        },
+        "min": {
+          "$ref": "./types.json#/definitions/valueType",
+          "description": "Minimum value for ranges or bounds (for uniform, zipf, exponential, etc.)"
+        },
+        "max": {
+          "$ref": "./types.json#/definitions/valueType",
+          "description": "Maximum value for ranges or bounds (for uniform, zipf, exponential, etc.)"
+        },
+        "start": {
+          "$ref": "./types.json#/definitions/valueType",
+          "description": "The starting value for the counter (for incremental distribution)"
+        },
+        "step": {
+          "$ref": "./types.json#/definitions/valueType",
+          "description": "The step value by which the counter is incremented (for incremental distribution)"
+        },
+        "limit": {
+          "$ref": "./types.json#/definitions/valueType",
+          "description": "Optional limit value for cycling (for incremental distribution)"
+        },
+        "exponent": {
+          "type": "number",
+          "minimum": 0.1,
+          "description": "Controls the steepness of the distribution (for zipf distribution)"
+        },
+        "shuffled": {
+          "type": "boolean",
+          "description": "Whether to shuffle the distribution to randomize values while preserving frequency distribution. Most meaningful for distributions with unequal probabilities (like zipf, exponential, etc.)."
+        },
+        "mean": {
+          "$ref": "./types.json#/definitions/valueType",
+          "description": "The mean (average) value (for exponential distribution)"
+        },
+        "shape": {
+          "type": "number",
+          "minimum": 0.1,
+          "description": "Shape parameter that determines the distribution's behavior (for weibull, gamma, log-normal, pareto)"
+        },
+        "scale": {
+          "$ref": "./types.json#/definitions/valueType",
+          "description": "Scale parameter that determines the characteristic scale (for weibull, gamma, log-normal)"
+        },
+        "mu": {
+          "type": "number",
+          "description": "Location parameter (mean in log-space) (for log-normal distribution)"
+        },
+        "sigma": {
+          "type": "number",
+          "minimum": 0.001,
+          "description": "Shape parameter (standard deviation in log-space) (for log-normal distribution)"
+        },
+        "stdDev": {
+          "$ref": "./types.json#/definitions/valueType",
+          "description": "Standard deviation for the distribution (for log-normal distribution)"
+        },
+        "median": {
+          "$ref": "./types.json#/definitions/valueType",
+          "description": "Median value (50th percentile) (for log-normal, pareto distributions)"
+        },
+        "p95": {
+          "$ref": "./types.json#/definitions/valueType",
+          "description": "95th percentile value (for log-normal, pareto distributions)"
+        },
+        "categories": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Categories for categorical sampler",
+          "items": {
+            "type": "object",
+            "required": ["value", "weight"],
+            "properties": {
+              "value": {
+                "$ref": "./types.json#/definitions/valueType",
+                "description": "Value of the category"
+              },
+              "weight": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Weight of the category (relative probability)"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "samplers": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Samplers for composite sampler",
+          "items": {
+            "type": "object",
+            "required": ["sampler", "weight"],
+            "properties": {
+              "sampler": {
+                "$ref": "#",
+                "description": "Sampler settings"
+              },
+              "weight": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Weight of the sampler (relative probability)"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "oneOf": [
+        { "required": ["count"] },
+        { "required": ["distribution"] }
+      ],
+      "additionalProperties": false,
+
+      "allOf": [
+        {
+          "if": {
+            "required": ["distribution"],
+            "properties": { "distribution": { "const": "constant" } }
+          },
+          "then": {
+            "required": ["value"]
+          }
+        },
+        {
+          "if": {
+            "required": ["distribution"],
+            "properties": { "distribution": { "const": "uniform" } }
+          },
+          "then": {
+            "required": ["min", "max"]
+          }
+        },
+        {
+          "if": {
+            "required": ["distribution"],
+            "properties": { "distribution": { "const": "incremental" } }
+          },
+          "then": {
+            "required": ["start", "step"]
+          }
+        },
+        {
+          "if": {
+            "required": ["distribution"],
+            "properties": { "distribution": { "const": "zipf" } }
+          },
+          "then": {
+            "required": ["min", "max", "exponent"]
+          }
+        },
+        {
+          "if": {
+            "required": ["distribution"],
+            "properties": { "distribution": { "const": "exponential" } }
+          },
+          "then": {
+            "required": ["mean"]
+          }
+        },
+        {
+          "if": {
+            "required": ["distribution"],
+            "properties": { "distribution": { "const": "weibull" } }
+          },
+          "then": {
+            "required": ["shape", "scale"]
+          }
+        },
+        {
+          "if": {
+            "required": ["distribution"],
+            "properties": { "distribution": { "const": "gamma" } }
+          },
+          "then": {
+            "required": ["shape", "scale"]
+          }
+        },
+        {
+          "if": {
+            "required": ["distribution"],
+            "properties": { "distribution": { "const": "log-normal" } }
+          },
+          "then": {
+            "oneOf": [
+              { "required": ["mu", "sigma"] },
+              { "required": ["scale", "shape"] },
+              { "required": ["mean", "stdDev"] },
+              { "required": ["median", "p95"] }
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": ["distribution"],
+            "properties": { "distribution": { "const": "pareto" } }
+          },
+          "then": {
+            "oneOf": [
+              { "required": ["scale", "shape"] },
+              { "required": ["min", "p95"] }
+            ]
+          }
+        },
+        {
+          "if": {
+            "required": ["distribution"],
+            "properties": { "distribution": { "const": "categorical" } }
+          },
+          "then": {
+            "required": ["categories"]
+          }
+        },
+        {
+          "if": {
+            "required": ["distribution"],
+            "properties": { "distribution": { "const": "composite" } }
+          },
+          "then": {
+            "required": ["samplers"]
+          }
+        }
+      ]
+    }
+  ],
+
+  "examples": [
+    100,
+    "5s",
+    "10kB",
+    { "count": 100 },
+    { "count": "10k" },
+    { "distribution": "constant", "value": 100 },
+    { "distribution": "uniform", "min": 10, "max": 100 },
+    { "distribution": "incremental", "start": 1, "step": 1, "limit": 1000 },
+    {
+      "distribution": "zipf",
+      "min": 1,
+      "max": 1000,
+      "exponent": 1.2,
+      "shuffled": true
+    },
+    {
+      "distribution": "exponential",
+      "mean": "500ms",
+      "min": "10ms",
+      "max": "5s"
+    },
+    { "distribution": "log-normal", "median": "100ms", "p95": "500ms" },
+    { "distribution": "pareto", "min": 10, "p95": 1000 }
+  ]
+}

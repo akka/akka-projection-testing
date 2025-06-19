@@ -1,13 +1,14 @@
-create table if not exists events (
-  name varchar(256),
+CREATE TABLE IF NOT EXISTS events (
+  name VARCHAR(256),
   projection_id BIGINT,
-  event varchar(256),
-  constraint pkey primary key (name, projection_id, event)
+  event VARCHAR(256),
+  updates INTEGER DEFAULT 1,
+  CONSTRAINT pkey PRIMARY KEY (name, projection_id, event)
 );
 
-create table if not exists results (
-  name varchar(256) primary key,
-  result varchar(256)
+CREATE TABLE IF NOT EXISTS results (
+  name VARCHAR(256) PRIMARY KEY,
+  result VARCHAR(256)
 );
 
 CREATE TABLE IF NOT EXISTS event_journal(

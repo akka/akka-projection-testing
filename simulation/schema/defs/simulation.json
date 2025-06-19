@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://akka.io/schemas/projection-testing/defs/simulation.json",
+  "title": "Simulation settings",
+  "description": "Main settings for a simulation configuration",
+  "$comment": "The simulation configuration defines a complete workload scenario with multiple sequential stages",
+
+  "type": "object",
+  "required": ["stages"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Optional name for the simulation for identification. Useful for distinguishing between different simulation runs"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description for the simulation. Can provide context, purpose, or details about the simulated scenario"
+    },
+    "stages": {
+      "type": "array",
+      "description": "Sequence of stage configurations that will be executed sequentially",
+      "items": {
+        "$ref": "./stage.json"
+      },
+      "minItems": 1
+    },
+    "engine": {
+      "description": "Optional settings for the simulation execution engine",
+      "$ref": "./engine.json"
+    }
+  },
+
+  "additionalProperties": false
+}

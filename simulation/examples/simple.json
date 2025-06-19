@@ -1,0 +1,29 @@
+{
+  "$schema": "../schema/run-simulation.json",
+  "simulation": {
+    "name": "Simple",
+    "description": "Simple simulation with uniform distribution over entities.",
+    "stages": [
+      {
+        "duration": "1 minute",
+        "generators": [
+          {
+            "entityId": {
+              "entity": {
+                "count": "10k"
+              }
+            },
+            "activity": {
+              "frequency": "10 / second",
+              "duration": "10 seconds",
+              "event": {
+                "frequency": "1 / second",
+                "dataSize": "100 B"
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

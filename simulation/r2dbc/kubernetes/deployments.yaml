@@ -1,0 +1,278 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: akka
+  name: engine
+  labels:
+    app: appka
+    deployment: engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment: engine
+  template:
+    metadata:
+      labels:
+        app: appka
+        deployment: engine
+    spec:
+      containers:
+        - name: akka-projection-testing
+          # NOTE: replace with published image
+          image: akka-projection-testing:latest
+          imagePullPolicy: Always
+          args:
+            - -J-XX:InitialRAMPercentage=75
+            - -J-XX:MaxRAMPercentage=75
+            - -J-XX:MaxHeapFreeRatio=100
+            - -J-XX:+AlwaysActAsServerClassMachine
+            - -Dconfig.resource=r2dbc.conf
+            - -Dakka.cluster.roles.0=engine
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: 15000m
+            limits:
+              memory: 4Gi
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: management
+            periodSeconds: 10
+            failureThreshold: 3
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: "/alive"
+              port: management
+            periodSeconds: 10
+            failureThreshold: 5
+            initialDelaySeconds: 20
+          ports:
+            - name: management
+              containerPort: 8558
+              protocol: TCP
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: metrics
+              containerPort: 9001
+              protocol: TCP
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: REQUIRED_CONTACT_POINT_NR
+              value: "3"
+            - name: AKKA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: akka-license-key
+                  key: akka-license-key
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: host
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+            - name: DB_SSL_ENABLED
+              value: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: akka
+  name: entities
+  labels:
+    app: appka
+    deployment: entities
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      deployment: entities
+  template:
+    metadata:
+      labels:
+        app: appka
+        deployment: entities
+    spec:
+      containers:
+        - name: akka-projection-testing
+          # NOTE: replace with published image
+          image: akka-projection-testing:latest
+          imagePullPolicy: Always
+          args:
+            - -J-XX:InitialRAMPercentage=75
+            - -J-XX:MaxRAMPercentage=75
+            - -J-XX:MaxHeapFreeRatio=100
+            - -J-XX:+AlwaysActAsServerClassMachine
+            - -Dconfig.resource=r2dbc.conf
+            - -Dakka.cluster.roles.0=write-model
+            - -Dakka.persistence.r2dbc.connection-factory.initial-size=20
+            - -Dakka.persistence.r2dbc.connection-factory.max-size=40
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: 3500m
+            limits:
+              memory: 4Gi
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: management
+            periodSeconds: 10
+            failureThreshold: 3
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: "/alive"
+              port: management
+            periodSeconds: 10
+            failureThreshold: 5
+            initialDelaySeconds: 20
+          ports:
+            - name: management
+              containerPort: 8558
+              protocol: TCP
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: metrics
+              containerPort: 9001
+              protocol: TCP
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: REQUIRED_CONTACT_POINT_NR
+              value: "3"
+            - name: AKKA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: akka-license-key
+                  key: akka-license-key
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: host
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+            - name: DB_SSL_ENABLED
+              value: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: akka
+  name: projections
+  labels:
+    app: appka
+    deployment: projections
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      deployment: projections
+  template:
+    metadata:
+      labels:
+        app: appka
+        deployment: projections
+    spec:
+      containers:
+        - name: akka-projection-testing
+          # NOTE: replace with published image
+          image: akka-projection-testing:latest
+          imagePullPolicy: Always
+          args:
+            - -J-XX:InitialRAMPercentage=75
+            - -J-XX:MaxRAMPercentage=75
+            - -J-XX:MaxHeapFreeRatio=100
+            - -J-XX:+AlwaysActAsServerClassMachine
+            - -Dconfig.resource=r2dbc.conf
+            - -Dakka.cluster.roles.0=read-model
+            - -Dakka.persistence.r2dbc.connection-factory.initial-size=20
+            - -Dakka.persistence.r2dbc.connection-factory.max-size=40
+            - -Devent-processor.parallelism=8
+            - -Devent-processor.projection-failure-every=500000
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: 3500m
+            limits:
+              memory: 4Gi
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: management
+            periodSeconds: 10
+            failureThreshold: 3
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet:
+              path: "/alive"
+              port: management
+            periodSeconds: 10
+            failureThreshold: 5
+            initialDelaySeconds: 20
+          ports:
+            - name: management
+              containerPort: 8558
+              protocol: TCP
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: metrics
+              containerPort: 9001
+              protocol: TCP
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: REQUIRED_CONTACT_POINT_NR
+              value: "3"
+            - name: AKKA_LICENSE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: akka-license-key
+                  key: akka-license-key
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: host
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+            - name: DB_SSL_ENABLED
+              value: "true"

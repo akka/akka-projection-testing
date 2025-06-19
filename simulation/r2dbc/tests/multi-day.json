@@ -1,0 +1,166 @@
+{
+  "$schema": "../../schema/run-simulation.json",
+  "simulation": {
+    "name": "multi-day",
+    "description": "Multiple days of complex random walks with daily rhythms, bursts, and quiet periods",
+    "stages": [
+      {
+        "name": "complex-random-walks",
+        "duration": "3 days",
+        "generators": [
+          {
+            "entityId": {
+              "entity": { "count": "1M" }
+            },
+            "activity": {
+              "frequency": {
+                "function": "additive",
+                "additiveRates": [
+                  {
+                    "function": "modulated",
+                    "carrier": {
+                      "function": "random-walk",
+                      "initial": "0.1/s",
+                      "min": "0/s",
+                      "max": "1/s",
+                      "volatility": 0.1,
+                      "trend": 0.0
+                    },
+                    "modulator": {
+                      "function": "sinusoidal",
+                      "base": "0/s",
+                      "amplitude": "1/s",
+                      "period": "24h"
+                    }
+                  },
+                  {
+                    "function": "burst",
+                    "base": "0/s",
+                    "peak": "1/s",
+                    "start": "1h",
+                    "rampUp": "30m",
+                    "burst": "1h",
+                    "rampDown": "30m"
+                  },
+                  {
+                    "function": "burst",
+                    "base": "0/s",
+                    "peak": "2/s",
+                    "start": "8h",
+                    "rampUp": "1h",
+                    "burst": "2h",
+                    "rampDown": "1h"
+                  },
+                  {
+                    "function": "burst",
+                    "base": "0/s",
+                    "peak": "1/s",
+                    "start": "25h",
+                    "rampUp": "30m",
+                    "burst": "1h",
+                    "rampDown": "30m"
+                  },
+                  {
+                    "function": "burst",
+                    "base": "0/s",
+                    "peak": "2/s",
+                    "start": "32h",
+                    "rampUp": "1h",
+                    "burst": "2h",
+                    "rampDown": "1h"
+                  },
+                  {
+                    "function": "burst",
+                    "base": "0/s",
+                    "peak": "1/s",
+                    "start": "49h",
+                    "rampUp": "30m",
+                    "burst": "1h",
+                    "rampDown": "30m"
+                  },
+                  {
+                    "function": "burst",
+                    "base": "0/s",
+                    "peak": "2/s",
+                    "start": "57h",
+                    "rampUp": "1h",
+                    "burst": "2h",
+                    "rampDown": "1h"
+                  }
+                ]
+              },
+              "duration": {
+                "distribution": "composite",
+                "samplers": [
+                  {
+                    "sampler": {
+                      "distribution": "log-normal",
+                      "min": "5s",
+                      "median": "2m",
+                      "p95": "15m",
+                      "max": "20m"
+                    },
+                    "weight": 0.7
+                  },
+                  {
+                    "sampler": {
+                      "distribution": "log-normal",
+                      "min": "15m",
+                      "median": "45m",
+                      "p95": "2h",
+                      "max": "3h"
+                    },
+                    "weight": 0.3
+                  }
+                ]
+              },
+              "event": {
+                "frequency": {
+                  "function": "composite",
+                  "compositeRates": [
+                    {
+                      "rate": {
+                        "function": "random-walk",
+                        "initial": "0.5/s",
+                        "min": "0.01/s",
+                        "max": "2/s",
+                        "volatility": 0.1,
+                        "trend": 0.0
+                      },
+                      "weight": 0.6
+                    },
+                    {
+                      "rate": {
+                        "function": "sinusoidal",
+                        "base": "0/s",
+                        "amplitude": "2/s",
+                        "period": "1h"
+                      },
+                      "weight": 0.4
+                    }
+                  ]
+                },
+                "dataSize": {
+                  "distribution": "log-normal",
+                  "min": "16B",
+                  "median": "64B",
+                  "p95": "512B",
+                  "max": "1kB"
+                }
+              }
+            },
+            "random": {
+              "seed": 123456789
+            }
+          }
+        ]
+      }
+    ],
+    "engine": {
+      "tick": "200ms",
+      "parallelism": 8,
+      "ackPersists": false,
+      "validationTimeout": "30m"
+    }
+  }
+}

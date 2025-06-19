@@ -1,0 +1,114 @@
+{
+  "$schema": "../../schema/run-simulation.json",
+  "simulation": {
+    "name": "overwhelming-burst",
+    "description": "Initial quiet period followed by massive burst and then recovery period",
+    "stages": [
+      {
+        "name": "quiet-period",
+        "duration": "30m",
+        "generators": [
+          {
+            "entityId": {
+              "entity": { "count": "100k" }
+            },
+            "activity": {
+              "frequency": {
+                "rate": {
+                  "function": "sinusoidal",
+                  "base": "5/s",
+                  "amplitude": "5/s",
+                  "period": "5m"
+                }
+              },
+              "duration": {
+                "distribution": "exponential",
+                "min": "1s",
+                "mean": "10s",
+                "max": "1m"
+              },
+              "event": {
+                "frequency": {
+                  "function": "random-walk",
+                  "initial": "1/s",
+                  "min": "0.1/s",
+                  "max": "10/s",
+                  "volatility": 2.0,
+                  "trend": 0.0
+                },
+                "dataSize": "128B"
+              }
+            },
+            "random": {
+              "seed": 123456789
+            }
+          }
+        ]
+      },
+      {
+        "name": "massive-burst",
+        "duration": "10m",
+        "generators": [
+          {
+            "entityId": {
+              "entity": { "count": "100k" }
+            },
+            "activity": {
+              "frequency": "500/s",
+              "duration": {
+                "distribution": "exponential",
+                "min": "1s",
+                "mean": "5s",
+                "max": "30s"
+              },
+              "event": {
+                "frequency": "5/s",
+                "dataSize": {
+                  "distribution": "log-normal",
+                  "median": "512B",
+                  "p95": "2kB",
+                  "max": "4kB"
+                }
+              }
+            },
+            "random": {
+              "seed": 123456789
+            }
+          }
+        ]
+      },
+      {
+        "name": "recovery-period",
+        "duration": "20m",
+        "generators": [
+          {
+            "entityId": {
+              "entity": { "count": "100k" }
+            },
+            "activity": {
+              "frequency": {
+                "function": "linear",
+                "initial": "100/s",
+                "target": "1/s"
+              },
+              "duration": "5s",
+              "event": {
+                "frequency": "2/s",
+                "dataSize": "128B"
+              }
+            },
+            "random": {
+              "seed": 123456789
+            }
+          }
+        ]
+      }
+    ],
+    "engine": {
+      "tick": "200ms",
+      "parallelism": 8,
+      "ackPersists": false,
+      "validationTimeout": "30m"
+    }
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "$schema": "../schema/run-simulation.json",
+  "simulation": {
+    "name": "Multi-stage test",
+    "description": "Simulates a warm-up, peak load, and cool-down phase.",
+    "stages": [
+      {
+        "name": "Warm-up",
+        "duration": "3m",
+        "generators": [
+          {
+            "entityId": {
+              "entity": {
+                "count": "10k"
+              }
+            },
+            "activity": {
+              "frequency": "5/s",
+              "duration": {
+                "distribution": "exponential",
+                "mean": "5s",
+                "min": "1s",
+                "max": "15s"
+              },
+              "event": {
+                "frequency": "2/s",
+                "dataSize": "256B"
+              }
+            },
+            "random": {
+              "seed": 1001
+            }
+          }
+        ]
+      },
+      {
+        "name": "Peak load",
+        "duration": "5m",
+        "generators": [
+          {
+            "entityId": {
+              "entity": {
+                "count": "10k"
+              },
+              "sliceDistribution": {
+                "type": "zipf",
+                "exponent": 1.1,
+                "shuffled": true
+              }
+            },
+            "activity": {
+              "frequency": {
+                "rate": {
+                  "function": "sinusoidal",
+                  "base": "20/s",
+                  "amplitude": "10/s",
+                  "period": "30s"
+                }
+              },
+              "duration": {
+                "distribution": "log-normal",
+                "median": "8s",
+                "p95": "20s",
+                "min": "2s",
+                "max": "30s"
+              },
+              "event": {
+                "frequency": "5/s",
+                "dataSize": {
+                  "distribution": "weibull",
+                  "shape": 1.5,
+                  "scale": "1kB",
+                  "min": "100B",
+                  "max": "5kB"
+                }
+              }
+            },
+            "random": {
+              "seed": 2002
+            }
+          }
+        ]
+      },
+      {
+        "name": "Cool-down",
+        "duration": "2m",
+        "delay": "10s",
+        "generators": [
+          {
+            "entityId": {
+              "entity": {
+                "count": "10k"
+              }
+            },
+            "activity": {
+              "frequency": {
+                "rate": {
+                  "function": "linear",
+                  "initial": "10/s",
+                  "target": "1/s"
+                }
+              },
+              "duration": "3s",
+              "event": {
+                "frequency": "1/s",
+                "dataSize": "128B"
+              }
+            },
+            "random": {
+              "seed": 3003
+            }
+          }
+        ]
+      }
+    ],
+    "engine": {
+      "tick": "100ms",
+      "parallelism": 8,
+      "ackPersists": false
+    }
+  }
+}

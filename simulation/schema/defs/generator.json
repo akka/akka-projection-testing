@@ -1,0 +1,225 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://akka.io/schemas/projection-testing/defs/generator.json",
+  "title": "Generator settings",
+  "description": "Settings that control a specific workload generator's behavior",
+  "$comment": "Generators create realistic workload patterns by managing entity selection and activity generation",
+
+  "type": "object",
+  "required": ["entityId", "activity"],
+  "properties": {
+    "entityId": {
+      "$ref": "./entity-id.json",
+      "description": "Configuration for the entity access patterns"
+    },
+    "activity": {
+      "$ref": "./activity.json",
+      "description": "Configuration for the activity patterns"
+    },
+    "random": {
+      "$ref": "#/definitions/randomSettings",
+      "description": "Optional random number generator settings"
+    }
+  },
+
+  "additionalProperties": false,
+
+  "definitions": {
+    "randomSettings": {
+      "type": "object",
+      "description": "Configuration for random number generation",
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "description": "Optional random algorithm specification from Apache Commons RNG RandomSource enum",
+          "enum": [
+            "JDK",
+            "WELL_512_A",
+            "WELL_1024_A",
+            "WELL_19937_A",
+            "WELL_19937_C",
+            "WELL_44497_A",
+            "WELL_44497_B",
+            "MT",
+            "ISAAC",
+            "SPLIT_MIX_64",
+            "XOR_SHIFT_1024_S",
+            "TWO_CMRES",
+            "TWO_CMRES_SELECT",
+            "MWC_256",
+            "KISS",
+            "XOR_SHIFT_1024_S_PHI",
+            "XO_RO_SHI_RO_64_S",
+            "XO_RO_SHI_RO_64_SS",
+            "XO_SHI_RO_128_PLUS",
+            "XO_SHI_RO_128_SS",
+            "XO_SHI_RO_256_PLUS",
+            "XO_SHI_RO_256_SS",
+            "XO_SHI_RO_512_PLUS",
+            "XO_SHI_RO_512_SS",
+            "PCG_MCG_XSH_RR_32",
+            "PCG_MCG_XSH_RS_32",
+            "PCG_XSH_RR_32",
+            "PCG_XSH_RS_32",
+            "PCG_MCG_XSL_RR_64",
+            "PCG_MCG_XSL_RR_64_OS",
+            "PCG_XSL_RR_64",
+            "PCG_XSL_RR_64_OS",
+            "SFC_32",
+            "SFC_64",
+            "JSF_32",
+            "JSF_64",
+            "MSWS",
+            "LXM"
+          ],
+          "examples": [
+            "WELL_19937_C",
+            "MT",
+            "XO_SHI_RO_256_PLUS",
+            "PCG_XSL_RR_64",
+            "JSF_64"
+          ]
+        },
+        "seed": {
+          "type": "integer",
+          "description": "Optional seed value for deterministic randomization"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+
+  "examples": [
+    {
+      "entityId": {
+        "entity": { "distribution": "uniform", "min": 1, "max": 8192 },
+        "slices": "0-127"
+      },
+      "activity": {
+        "frequency": "5/s",
+        "duration": "3s",
+        "event": {
+          "frequency": "10/s",
+          "dataSize": "1kB"
+        }
+      }
+    },
+    {
+      "entityId": {
+        "entity": { "distribution": "uniform", "min": 1, "max": 8192 },
+        "slices": "0-63",
+        "sliceDistribution": { "type": "zipf", "exponent": 1.2 }
+      },
+      "activity": {
+        "frequency": {
+          "process": "poisson",
+          "rate": {
+            "function": "sinusoidal",
+            "base": "10/s",
+            "amplitude": "5/s",
+            "period": "60s"
+          }
+        },
+        "perSlice": {
+          "0-31": {
+            "perEntity": {
+              "*": {
+                "duration": {
+                  "distribution": "log-normal",
+                  "median": "2s",
+                  "p95": "10s"
+                },
+                "event": {
+                  "frequency": "10/s",
+                  "dataSize": {
+                    "distribution": "log-normal",
+                    "median": "512B",
+                    "p95": "2kB"
+                  }
+                }
+              }
+            }
+          },
+          "32-63": {
+            "perEntity": {
+              "0-1023": {
+                "duration": "5s",
+                "event": {
+                  "frequency": "20/s",
+                  "dataSize": "2kB"
+                }
+              },
+              "1024-4095": {
+                "duration": "2s",
+                "event": {
+                  "frequency": "5/s",
+                  "dataSize": "512B"
+                }
+              }
+            }
+          }
+        }
+      },
+      "random": {
+        "algorithm": "XO_SHI_RO_256_PLUS",
+        "seed": 12345
+      }
+    },
+    {
+      "entityId": {
+        "entity": { 
+          "distribution": "zipf",
+          "min": 1, 
+          "max": 1000, 
+          "exponent": 1.5,
+          "shuffled": true
+        }
+      },
+      "activity": {
+        "frequency": "2/s",
+        "perEntity": {
+          "0-1023": {
+            "duration": {
+              "distribution": "exponential",
+              "mean": "5s",
+              "min": "1s",
+              "max": "30s"
+            },
+            "event": {
+              "frequency": "20/s",
+              "dataSize": "2kB"
+            }
+          },
+          "1024-4095": {
+            "duration": {
+              "distribution": "weibull",
+              "scale": "5s",
+              "shape": 2.0
+            },
+            "event": {
+              "frequency": {
+                "process": "poisson",
+                "rate": {
+                  "function": "random-walk",
+                  "initial": "5/s",
+                  "min": "1/s",
+                  "max": "20/s",
+                  "volatility": 0.3
+                }
+              },
+              "dataSize": {
+                "distribution": "pareto",
+                "min": "256B",
+                "p95": "8kB"
+              }
+            }
+          }
+        }
+      },
+      "random": {
+        "algorithm": "WELL_19937_C",
+        "seed": 42
+      }
+    }
+  ]
+}

@@ -1,0 +1,204 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://akka.io/schemas/projection-testing/defs/activity.json",
+  "title": "Activity settings",
+  "description": "Configuration for activity patterns in the simulation",
+  "$comment": "Activities represent interactions with entities over time. The schema supports hierarchical configurations with different levels of specificity",
+
+  "type": "object",
+  "required": ["frequency"],
+  "properties": {
+    "frequency": {
+      "$ref": "./point-process.json",
+      "description": "Frequency of new activities"
+    },
+    "perSlice": {
+      "type": "object",
+      "description": "Mapping of slices to their respective settings",
+      "additionalProperties": {
+        "$ref": "#/definitions/activityPerSliceSettings"
+      }
+    },
+    "perEntity": {
+      "type": "object",
+      "description": "Mapping of entity indices to their respective settings",
+      "additionalProperties": {
+        "$ref": "#/definitions/activityPerEntitySettings"
+      }
+    },
+    "duration": {
+      "$ref": "./sampler.json",
+      "description": "Sampler for how long the activity with the entity lasts"
+    },
+    "event": {
+      "$ref": "#/definitions/eventSettings",
+      "description": "Settings for event generation during an activity"
+    }
+  },
+
+  "oneOf": [
+    { "required": ["perSlice"] },
+    { "required": ["perEntity"] },
+    { "required": ["duration", "event"] }
+  ],
+
+  "additionalProperties": false,
+
+  "definitions": {
+    "activityPerSliceSettings": {
+      "type": "object",
+      "properties": {
+        "perEntity": {
+          "type": "object",
+          "description": "Mapping of entity indices to their respective settings",
+          "additionalProperties": {
+            "$ref": "#/definitions/activityPerEntitySettings"
+          }
+        },
+        "duration": {
+          "$ref": "./sampler.json",
+          "description": "Sampler for how long the activity with entities in this slice lasts"
+        },
+        "event": {
+          "$ref": "#/definitions/eventSettings",
+          "description": "Settings for event generation during an activity"
+        }
+      },
+      "oneOf": [
+        { "required": ["perEntity"] },
+        { "required": ["duration", "event"] }
+      ],
+      "additionalProperties": false
+    },
+
+    "activityPerEntitySettings": {
+      "type": "object",
+      "required": ["duration", "event"],
+      "properties": {
+        "duration": {
+          "$ref": "./sampler.json",
+          "description": "Sampler for how long the activity with this entity lasts"
+        },
+        "event": {
+          "$ref": "#/definitions/eventSettings",
+          "description": "Settings for event generation during an activity"
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "eventSettings": {
+      "type": "object",
+      "required": ["frequency", "dataSize"],
+      "properties": {
+        "frequency": {
+          "$ref": "./point-process.json",
+          "description": "Frequency of events in an activity"
+        },
+        "dataSize": {
+          "$ref": "./sampler.json",
+          "description": "Data size for each generated event"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+
+  "examples": [
+    {
+      "frequency": "5/s",
+      "duration": "3s",
+      "event": {
+        "frequency": "10/s",
+        "dataSize": "1kB"
+      }
+    },
+    {
+      "frequency": {
+        "process": "poisson",
+        "rate": {
+          "function": "sinusoidal",
+          "base": "10/s",
+          "amplitude": "5/s",
+          "period": "60s"
+        }
+      },
+      "perSlice": {
+        "0-63": {
+          "duration": {
+            "distribution": "log-normal",
+            "median": "2s",
+            "p95": "10s"
+          },
+          "event": {
+            "frequency": "10/s",
+            "dataSize": {
+              "distribution": "log-normal",
+              "median": "512B",
+              "p95": "2kB"
+            }
+          }
+        },
+        "64-127": {
+          "perEntity": {
+            "0-1023": {
+              "duration": "5s",
+              "event": {
+                "frequency": "20/s",
+                "dataSize": "2kB"
+              }
+            },
+            "1024-4095": {
+              "duration": "2s",
+              "event": {
+                "frequency": "5/s",
+                "dataSize": "512B"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "frequency": "2/s",
+      "perEntity": {
+        "0-1023": {
+          "duration": {
+            "distribution": "exponential",
+            "mean": "5s",
+            "min": "1s",
+            "max": "30s"
+          },
+          "event": {
+            "frequency": "20/s",
+            "dataSize": "2kB"
+          }
+        },
+        "1024-4095": {
+          "duration": {
+            "distribution": "weibull",
+            "scale": "5s",
+            "shape": 2.0
+          },
+          "event": {
+            "frequency": {
+              "process": "poisson",
+              "rate": {
+                "function": "random-walk",
+                "initial": "5/s",
+                "min": "1/s",
+                "max": "20/s",
+                "volatility": 0.3
+              }
+            },
+            "dataSize": {
+              "distribution": "pareto",
+              "min": "256B",
+              "p95": "8kB"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

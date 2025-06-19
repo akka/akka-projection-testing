@@ -1,0 +1,63 @@
+{
+  "$schema": "../../schema/run-simulation.json",
+  "simulation": {
+    "name": "wandering",
+    "description": "A full day of random walks",
+    "stages": [
+      {
+        "name": "random-walks",
+        "duration": "1 day",
+        "generators": [
+          {
+            "entityId": {
+              "entity": { "count": "1M" }
+            },
+            "activity": {
+              "frequency": {
+                "function": "random-walk",
+                "initial": "1/s",
+                "min": "0.01/s",
+                "max": "5/s",
+                "volatility": 0.1,
+                "trend": 0.0
+              },
+              "duration": {
+                "distribution": "log-normal",
+                "min": "10s",
+                "median": "5m",
+                "p95": "25m",
+                "max": "30m"
+              },
+              "event": {
+                "frequency": {
+                  "function": "random-walk",
+                  "initial": "0.5/s",
+                  "min": "0.01/s",
+                  "max": "3/s",
+                  "volatility": 0.1,
+                  "trend": 0.0
+                },
+                "dataSize": {
+                  "distribution": "log-normal",
+                  "min": "16B",
+                  "median": "64B",
+                  "p95": "256B",
+                  "max": "512B"
+                }
+              }
+            },
+            "random": {
+              "seed": 123456789
+            }
+          }
+        ]
+      }
+    ],
+    "engine": {
+      "tick": "200ms",
+      "parallelism": 8,
+      "ackPersists": false,
+      "validationTimeout": "30m"
+    }
+  }
+}

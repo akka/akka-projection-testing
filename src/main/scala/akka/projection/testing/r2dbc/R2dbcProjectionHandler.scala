@@ -9,6 +9,7 @@ import scala.concurrent.Future
 
 import akka.Done
 import akka.persistence.query.typed.EventEnvelope
+import akka.persistence.r2dbc.internal.Sql.Interpolation
 import akka.projection.ProjectionId
 import akka.projection.r2dbc.scaladsl.R2dbcHandler
 import akka.projection.r2dbc.scaladsl.R2dbcSession
@@ -32,10 +33,15 @@ class R2dbcProjectionHandler(
       Future.successful(Done)
     else {
       val stmt = session
-        .createStatement("insert into events(name, projection_id, event) values ($1, $2, $3)")
-        .bind("$1", envelope.event.testName)
-        .bind("$2", projectionIndex)
-        .bind("$3", envelope.event.payload)
+        .createStatement(sql"""
+          INSERT INTO events(name, projection_id, event)
+          VALUES (?, ?, ?)
+          ON CONFLICT (name, projection_id, event)
+          DO UPDATE SET updates = events.updates + 1;
+        """)
+        .bind(0, envelope.event.testName)
+        .bind(1, projectionIndex)
+        .bind(2, envelope.event.payload)
       session.updateOne(stmt).map(_ => Done)
     }
   }
@@ -63,10 +69,15 @@ class R2dbcGroupedProjectionHandler(
       val stmts =
         envelopes.map { env =>
           session
-            .createStatement("insert into events(name, projection_id, event) values ($1, $2, $3)")
-            .bind("$1", env.event.testName)
-            .bind("$2", projectionIndex)
-            .bind("$3", env.event.payload)
+            .createStatement(sql"""
+              INSERT INTO events(name, projection_id, event)
+              VALUES (?, ?, ?)
+              ON CONFLICT (name, projection_id, event)
+              DO UPDATE SET updates = events.updates + 1;
+            """)
+            .bind(0, env.event.testName)
+            .bind(1, projectionIndex)
+            .bind(2, env.event.payload)
         }.toVector
 
       session.update(stmts).map(_ => Done)

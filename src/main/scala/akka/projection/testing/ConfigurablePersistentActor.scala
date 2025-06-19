@@ -31,9 +31,9 @@ object ConfigurablePersistentActor {
 
   sealed trait Command
 
-  final case class WakeUp(testName: String) extends Command with CborSerializable
+  case object WakeUp extends Command with CborSerializable
 
-  case object Stop extends Command
+  case object Stop extends Command with CborSerializable
 
   final case class PersistAndAck(
       totalEvents: Long,
@@ -58,6 +58,18 @@ object ConfigurablePersistentActor {
       bytesPerEvent: Int,
       replyTo: ActorRef[StatusReply[Done]])
       extends Command
+
+  final case class PersistSingle(testName: String, payload: String, dataBytes: Int)
+      extends Command
+      with CborSerializable
+
+  final case class PersistSingleAndAck(
+      testName: String,
+      payload: String,
+      dataBytes: Int,
+      replyTo: ActorRef[StatusReply[Done]])
+      extends Command
+      with CborSerializable
 
   final case class State(eventsProcessed: Long) extends CborSerializable
 
@@ -85,15 +97,19 @@ object ConfigurablePersistentActor {
                 ctx.log.debug("Finished persisting {} events. Replying to {}", totalEvents, replyTo)
                 replyTo ! StatusReply.ack()
                 Effect.stop()
-                Effect.none
               } else {
                 val msg = s"${toPersist}-${state.eventsProcessed}"
-
                 Effect.persist(Event(testName, payload = msg, data = randomPayload(bytesPerEvent))).thenRun { _ =>
                   ctx.self ! InternalPersist(totalEvents, testName, toPersist, bytesPerEvent, replyTo)
                 }
               }
-            case WakeUp(testName) =>
+            case PersistSingle(testName, payload, dataBytes) =>
+              Effect.persist(Event(testName, payload, data = randomPayload(dataBytes)))
+            case PersistSingleAndAck(testName, payload, dataBytes, replyTo) =>
+              Effect
+                .persist(Event(testName, payload, data = randomPayload(dataBytes)))
+                .thenReply(replyTo)(_ => StatusReply.ack())
+            case WakeUp =>
               ctx.log.debug("WakeUp {}", ctx.self.path.name)
               Effect.none
             case Stop =>

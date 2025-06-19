@@ -59,6 +59,8 @@ lazy val `akka-projection-testing` = project
       "ch.qos.logback" % "logback-classic" % "1.5.12",
       "org.postgresql" % "postgresql" % "42.7.4",
       "org.hdrhistogram" % "HdrHistogram" % "2.2.2",
+      "org.apache.commons" % "commons-rng-simple" % "1.6",
+      "org.apache.commons" % "commons-statistics-distribution" % "1.1",
       "com.typesafe.akka" %% "akka-actor-testkit-typed" % AkkaVersion % Test,
       "com.typesafe.akka" %% "akka-persistence-testkit" % AkkaVersion % Test,
       "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion % Test,
@@ -79,10 +81,25 @@ lazy val `akka-projection-testing` = project
     Test / logBuffered := false)
   //  .enablePlugins(Cinnamon)
   .settings(
-    dockerBaseImage := "eclipse-temurin:21.0.5_11-jre-noble",
+    dockerBaseImage := "eclipse-temurin:21.0.7_6-jre-noble",
     dockerUsername := sys.props.get("docker.username"),
     dockerRepository := sys.props.get("docker.registry"),
-    dockerUpdateLatest := true)
+    dockerUpdateLatest := true,
+    dockerBuildxPlatforms := {
+      // regular build with local platform by default, but support `DOCKER_PLATFORM=linux/amd64`
+      sys.env.get("DOCKER_PLATFORM").fold(dockerBuildxPlatforms.value)(platform => Seq(platform))
+    },
+    dockerBuildCommand := {
+      // add buildx for Docker/publishLocal as well, if buildx platforms defined
+      val platforms = dockerBuildxPlatforms.value
+      if (platforms.isEmpty) dockerBuildCommand.value
+      else {
+        dockerExecCommand.value ++
+        Seq("buildx", "build", s"--platform=${platforms.mkString(",")}") ++
+        dockerBuildOptions.value ++
+        Seq(".")
+      }
+    })
 
 TaskKey[Unit]("verifyCodeFmt") := {
   scalafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>

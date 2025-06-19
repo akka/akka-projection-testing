@@ -1,0 +1,366 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://akka.io/schemas/projection-testing/defs/point-process.json",
+  "title": "Point process settings",
+  "description": "Settings that define the behavior of a point process (the occurrence of discrete events in continuous time)",
+  "$comment": "Point processes control event generation timing in the simulation",
+
+  "oneOf": [
+    {
+      "$ref": "./types.json#/definitions/rate",
+      "description": "Shorthand notation: a rate string directly creates a Poisson process with constant rate"
+    },
+    {
+      "$ref": "#/definitions/rateFunction",
+      "description": "Shorthand notation: a rate function object directly creates a Poisson process"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "process": {
+          "type": "string",
+          "enum": ["poisson"],
+          "default": "poisson",
+          "description": "Type of point process. Currently, only Poisson is supported"
+        },
+        "rate": {
+          "oneOf": [
+            {
+              "$ref": "./types.json#/definitions/rate",
+              "description": "Direct rate specification creates a constant rate function"
+            },
+            {
+              "$ref": "#/definitions/rateFunction",
+              "description": "Rate function that controls how event frequency changes over time"
+            }
+          ]
+        }
+      },
+      "required": ["rate"],
+      "additionalProperties": false
+    }
+  ],
+
+  "definitions": {
+    "rateFunction": {
+      "type": "object",
+      "properties": {
+        "function": {
+          "type": "string",
+          "enum": [
+            "constant",
+            "linear",
+            "sinusoidal",
+            "random-walk",
+            "burst",
+            "additive",
+            "modulated",
+            "composite"
+          ],
+          "description": "Type of rate function that controls how event frequency changes over time"
+        },
+        "value": {
+          "$ref": "./types.json#/definitions/rate",
+          "description": "The fixed rate at which events occur (for constant rate function)"
+        },
+        "initial": {
+          "$ref": "./types.json#/definitions/rate",
+          "description": "Initial rate for linear or random-walk rate functions"
+        },
+        "target": {
+          "$ref": "./types.json#/definitions/rate",
+          "description": "Target rate for linear rate function"
+        },
+        "base": {
+          "$ref": "./types.json#/definitions/rate",
+          "description": "Base rate for sinusoidal or burst rate functions"
+        },
+        "amplitude": {
+          "$ref": "./types.json#/definitions/rate",
+          "description": "Amplitude for sinusoidal rate function"
+        },
+        "period": {
+          "$ref": "./types.json#/definitions/duration",
+          "description": "Period for sinusoidal rate function"
+        },
+        "shift": {
+          "$ref": "./types.json#/definitions/duration",
+          "description": "Shift for sinusoidal rate function",
+          "default": "0s"
+        },
+        "min": {
+          "$ref": "./types.json#/definitions/rate",
+          "description": "Minimum rate for random-walk rate function"
+        },
+        "max": {
+          "$ref": "./types.json#/definitions/rate",
+          "description": "Maximum rate for random-walk rate function"
+        },
+        "volatility": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Volatility for random-walk rate function"
+        },
+        "trend": {
+          "type": "number",
+          "description": "Trend for random-walk rate function",
+          "default": 0
+        },
+        "peak": {
+          "$ref": "./types.json#/definitions/rate",
+          "description": "Peak rate for burst rate function"
+        },
+        "start": {
+          "$ref": "./types.json#/definitions/duration",
+          "description": "Start time for burst rate function"
+        },
+        "rampUp": {
+          "$ref": "./types.json#/definitions/duration",
+          "description": "Ramp-up duration for burst rate function"
+        },
+        "burst": {
+          "$ref": "./types.json#/definitions/duration",
+          "description": "Burst duration for burst rate function"
+        },
+        "rampDown": {
+          "$ref": "./types.json#/definitions/duration",
+          "description": "Ramp-down duration for burst rate function"
+        },
+        "additiveRates": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Array of rate functions to be added together (for additive rate function)",
+          "items": {
+            "$ref": "#/definitions/rateFunction"
+          }
+        },
+        "carrier": {
+          "$ref": "#/definitions/rateFunction",
+          "description": "Rate function that serves as the carrier signal to be modulated"
+        },
+        "modulator": {
+          "$ref": "#/definitions/rateFunction",
+          "description": "Rate function that modulates the carrier signal"
+        },
+        "strength": {
+          "type": "number",
+          "description": "Optional strength parameter for modulation (for modulated rate function)"
+        },
+        "compositeRates": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Array of weighted rate functions (for composite rate function)",
+          "items": {
+            "type": "object",
+            "required": ["rate", "weight"],
+            "properties": {
+              "rate": {
+                "$ref": "#/definitions/rateFunction",
+                "description": "Rate function"
+              },
+              "weight": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "description": "Weight for this rate function"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["function"],
+      "allOf": [
+        {
+          "if": {
+            "properties": { "function": { "const": "constant" } }
+          },
+          "then": {
+            "required": ["value"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "function": { "const": "linear" } }
+          },
+          "then": {
+            "required": ["initial", "target"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "function": { "const": "sinusoidal" } }
+          },
+          "then": {
+            "required": ["base", "amplitude", "period"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "function": { "const": "random-walk" } }
+          },
+          "then": {
+            "required": ["initial", "min", "max", "volatility"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "function": { "const": "burst" } }
+          },
+          "then": {
+            "required": ["base", "peak", "start", "rampUp", "burst", "rampDown"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "function": { "const": "additive" } }
+          },
+          "then": {
+            "required": ["additiveRates"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "function": { "const": "modulated" } }
+          },
+          "then": {
+            "required": ["carrier", "modulator"]
+          }
+        },
+        {
+          "if": {
+            "properties": { "function": { "const": "composite" } }
+          },
+          "then": {
+            "required": ["compositeRates"]
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  },
+
+  "examples": [
+    "10/s",
+    "0.5/ms",
+    "1000/min",
+    {
+      "function": "constant",
+      "value": "10/s"
+    },
+    {
+      "function": "linear",
+      "initial": "5/s",
+      "target": "50/s"
+    },
+    {
+      "process": "poisson",
+      "rate": "10/s"
+    },
+    {
+      "process": "poisson",
+      "rate": {
+        "function": "constant",
+        "value": "10/s"
+      }
+    },
+    {
+      "process": "poisson",
+      "rate": {
+        "function": "linear",
+        "initial": "5/s",
+        "target": "50/s"
+      }
+    },
+    {
+      "process": "poisson",
+      "rate": {
+        "function": "sinusoidal",
+        "base": "10/s",
+        "amplitude": "5/s",
+        "period": "30s"
+      }
+    },
+    {
+      "process": "poisson",
+      "rate": {
+        "function": "random-walk",
+        "initial": "10/s",
+        "min": "1/s",
+        "max": "20/s",
+        "volatility": 0.2,
+        "trend": 0.05
+      }
+    },
+    {
+      "process": "poisson",
+      "rate": {
+        "function": "burst",
+        "base": "5/s",
+        "peak": "100/s",
+        "start": "60s",
+        "rampUp": "10s",
+        "burst": "30s",
+        "rampDown": "20s"
+      }
+    },
+    {
+      "process": "poisson",
+      "rate": {
+        "function": "additive",
+        "rates": [
+          {
+            "function": "constant",
+            "value": "5/s"
+          },
+          {
+            "function": "sinusoidal",
+            "base": "10/s",
+            "amplitude": "3/s",
+            "period": "60s"
+          }
+        ]
+      }
+    },
+    {
+      "process": "poisson",
+      "rate": {
+        "function": "modulated",
+        "base": {
+          "function": "constant",
+          "value": "10/s"
+        },
+        "modulator": {
+          "function": "sinusoidal",
+          "base": "1.0",
+          "amplitude": "0.5",
+          "period": "120s"
+        },
+        "strength": 0.8
+      }
+    },
+    {
+      "process": "poisson",
+      "rate": {
+        "function": "composite",
+        "weighted": [
+          {
+            "function": {
+              "function": "constant",
+              "value": "5/s"
+            },
+            "weight": 0.7
+          },
+          {
+            "function": {
+              "function": "sinusoidal",
+              "base": "15/s",
+              "amplitude": "5/s",
+              "period": "30s"
+            },
+            "weight": 0.3
+          }
+        ]
+      }
+    }
+  ]
+}
