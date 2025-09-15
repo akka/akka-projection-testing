@@ -43,6 +43,12 @@ Adjust the includes in `local.conf` to select JDBC.
 
 ### gRPC / R2DBC (Postgres)
 
+Start a local PostgresSQL server on default port 5432:
+
+```shell
+docker compose -f docker/docker-compose-r2dbc-postgres.yml up --wait
+```
+
 Adjust the includes in `local.conf` to select 'local-grpc'.
 
 ### Run application
