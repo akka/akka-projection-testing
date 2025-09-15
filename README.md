@@ -43,7 +43,7 @@ Adjust the includes in `local.conf` to select JDBC.
 
 ### gRPC / R2DBC (Postgres)
 
-Adjust the includes in `local.conf` to select R2DBC.
+Adjust the includes in `local.conf` to select 'local-grpc'.
 
 ### Run application
 
