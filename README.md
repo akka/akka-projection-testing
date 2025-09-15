@@ -7,6 +7,7 @@ It is currently support the following alternative Akka Persistence and Akka Proj
 * R2DBC (Postgres) as the event sourcing event store and the projection using R2DBC (Postgres)
 * Cassandra as the event sourcing event store and the projection using JDBC (Postgres)
 * JDBC (Postgres) as the event sourcing event store and the projection using JDBC (Postgres)
+* R2DBC (Postgres) as the store and Akka gRPC projections into R2DBC (Postgres)
 
 ## Running a test locally
 
@@ -39,6 +40,10 @@ docker compose -f docker/docker-compose-jdbc-postgres.yml up --wait
 ```
 
 Adjust the includes in `local.conf` to select JDBC.
+
+### gRPC / R2DBC (Postgres)
+
+Adjust the includes in `local.conf` to select R2DBC.
 
 ### Run application
 

@@ -4,9 +4,6 @@
 
 package akka.projection.testing
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -18,6 +15,9 @@ import akka.management.cluster.bootstrap.ClusterBootstrap
 import akka.management.scaladsl.AkkaManagement
 import akka.projection.ProjectionBehavior
 import akka.projection.testing.simulation.Engine
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object Guardian {
 

@@ -40,6 +40,7 @@ lazy val `akka-projection-testing` = project
       "com.typesafe.akka" %% "akka-persistence-query" % AkkaVersion,
       "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
       "com.lightbend.akka" %% "akka-projection-eventsourced" % AkkaProjectionVersion,
+      "com.lightbend.akka" %% "akka-projection-grpc" % AkkaProjectionVersion,
       "com.lightbend.akka" %% "akka-persistence-r2dbc" % AkkaPersistenceR2dbcVersion,
       "com.lightbend.akka" %% "akka-projection-r2dbc" % AkkaProjectionVersion,
       "com.lightbend.akka" %% "akka-persistence-dynamodb" % AkkaPersistenceDynamoDBVersion,
