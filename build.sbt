@@ -1,10 +1,10 @@
-val AkkaVersion = "2.10.6"
-val AkkaHttpVersion = "10.7.1"
-val AkkaProjectionVersion = "1.6.13"
-val AkkaManagementVersion = "1.6.2"
+val AkkaVersion = "2.10.9"
+val AkkaHttpVersion = "10.7.2"
+val AkkaProjectionVersion = "1.6.14"
+val AkkaManagementVersion = "1.6.3"
 val AkkaPersistenceR2dbcVersion = "1.3.7"
-val AkkaPersistenceDynamoDBVersion = "2.0.6"
-val AkkaPersistenceJdbcVersion = "5.5.2"
+val AkkaPersistenceDynamoDBVersion = "2.0.8"
+val AkkaPersistenceJdbcVersion = "5.5.3"
 val AkkaPersistenceCassandraVersion = "1.3.2"
 
 ThisBuild / dynverSeparator := "-"
@@ -40,6 +40,7 @@ lazy val `akka-projection-testing` = project
       "com.typesafe.akka" %% "akka-persistence-query" % AkkaVersion,
       "com.typesafe.akka" %% "akka-serialization-jackson" % AkkaVersion,
       "com.lightbend.akka" %% "akka-projection-eventsourced" % AkkaProjectionVersion,
+      "com.lightbend.akka" %% "akka-projection-grpc" % AkkaProjectionVersion,
       "com.lightbend.akka" %% "akka-persistence-r2dbc" % AkkaPersistenceR2dbcVersion,
       "com.lightbend.akka" %% "akka-projection-r2dbc" % AkkaProjectionVersion,
       "com.lightbend.akka" %% "akka-persistence-dynamodb" % AkkaPersistenceDynamoDBVersion,
