@@ -21,3 +21,6 @@ runs:
       uses: coursier/setup-action@7bde40eee928896f074dbb76d22dd772eed5c65f
       with:
         jvm: temurin:1.21
+
+    - name: Run akka/github-actions-scripts
+      uses: akka/github-actions-scripts/setup_global_resolver@main

@@ -8,6 +8,13 @@ It is currently support the following alternative Akka Persistence and Akka Proj
 * Cassandra as the event sourcing event store and the projection using JDBC (Postgres)
 * JDBC (Postgres) as the event sourcing event store and the projection using JDBC (Postgres)
 
+## Build Token
+
+To build locally, you need to fetch a token at https://account.akka.io/token that you have to place into `~/.sbt/1.0/akka-commercial.sbt` file like this:
+```
+ThisBuild / resolvers += "lightbend-akka".at("your token resolver here")
+```
+
 ## Running a test locally
 
 ### R2DBC (Postgres)
