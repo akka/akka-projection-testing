@@ -10,7 +10,7 @@ on:
 jobs:
   check-code-style:
     name: Checks
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     if: github.repository == 'akka/akka-projection-testing'
     steps:
       - name: Checkout
@@ -31,7 +31,7 @@ jobs:
 
   test-r2dbc:
     name: Run tests - R2DBC
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     if: github.repository == 'akka/akka-projection-testing'
     steps:
       - name: Checkout
@@ -50,7 +50,7 @@ jobs:
 
   test-dynamodb:
     name: Run tests - DynamoDB
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     if: github.repository == 'akka/akka-projection-testing'
     steps:
       - name: Checkout
@@ -69,7 +69,7 @@ jobs:
 
   test-jdbc:
     name: Run tests - JDBC
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     if: github.repository == 'akka/akka-projection-testing'
     steps:
       - name: Checkout
@@ -88,7 +88,7 @@ jobs:
 
   test-cassandra:
     name: Run tests - Cassandra
-    runs-on: ubuntu-22.04
+    runs-on: Akka-Default
     if: github.repository == 'akka/akka-projection-testing'
     steps:
       - name: Checkout
