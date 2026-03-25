@@ -15,8 +15,7 @@ jobs:
     steps:
       - name: Checkout
         # https://github.com/actions/checkout/releases
-        # v4.1.1
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@v6
         with:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
@@ -36,8 +35,7 @@ jobs:
     steps:
       - name: Checkout
         # https://github.com/actions/checkout/releases
-        # v4.1.1
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@v6
         with:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
@@ -55,8 +53,7 @@ jobs:
     steps:
       - name: Checkout
         # https://github.com/actions/checkout/releases
-        # v4.1.1
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@v6
         with:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
@@ -74,8 +71,7 @@ jobs:
     steps:
       - name: Checkout
         # https://github.com/actions/checkout/releases
-        # v4.1.1
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@v6
         with:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
@@ -93,8 +89,7 @@ jobs:
     steps:
       - name: Checkout
         # https://github.com/actions/checkout/releases
-        # v4.1.1
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@v6
         with:
           # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
           fetch-depth: 0
