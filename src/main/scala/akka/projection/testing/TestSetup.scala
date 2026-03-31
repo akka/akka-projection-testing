@@ -5,7 +5,6 @@
 package akka.projection.testing
 
 import scala.concurrent.Future
-
 import akka.Done
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -14,8 +13,10 @@ import akka.persistence.dynamodb.query.scaladsl.DynamoDBReadJournal
 import akka.persistence.jdbc.query.scaladsl.JdbcReadJournal
 import akka.persistence.r2dbc.query.scaladsl.R2dbcReadJournal
 import akka.projection.ProjectionBehavior
+import akka.projection.grpc.consumer.javadsl.GrpcReadJournal
 import akka.projection.testing.cassandra.CassandraTestSetup
 import akka.projection.testing.dynamodb.DynamoDBTestSetup
+import akka.projection.testing.grpc.GrpcTestSetup
 import akka.projection.testing.jdbc.JdbcTestSetup
 import akka.projection.testing.r2dbc.R2dbcTestSetup
 
@@ -45,8 +46,16 @@ object TestSetup {
     override def readJournal: String = CassandraReadJournal.Identifier
   }
 
+  case object GRPC extends Journal {
+    override val journalPluginId: String = "akka.persistence.r2dbc.journal"
+    override def readJournal: String = GrpcReadJournal.Identifier
+  }
+
   def apply(settings: EventProcessorSettings)(implicit system: ActorSystem[_]): TestSetup = {
     system.settings.config.getString("akka.persistence.journal.plugin") match {
+      // same as R2DBC so we need to check an additional config key
+      case TestSetup.GRPC.journalPluginId if GrpcTestSetup.isGrpcRun(system) =>
+        new GrpcTestSetup(settings)
       case TestSetup.R2DBC.journalPluginId     => new R2dbcTestSetup(settings)
       case TestSetup.DynamoDB.journalPluginId  => new DynamoDBTestSetup(settings)
       case TestSetup.JDBC.journalPluginId      => new JdbcTestSetup(settings)
